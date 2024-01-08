@@ -1,0 +1,6 @@
+*.cfg
+*.env
+*.xlsx
+**/Scripts/**
+**/Lib/**
+**/Include/**
