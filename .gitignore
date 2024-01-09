@@ -1,3 +1,5 @@
+known_exploited_vulnerabilities.json
+.vscode/settings.json
 *.cfg
 *.env
 *.xlsx
