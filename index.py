@@ -20,23 +20,22 @@ vuln_medium = ()
 vuln_high = ()
 vuln_critical = ()
 
-def load_KEV_data(cve: str = "CVE-2021-21017"):
-    
-    try:
-        with open(KEV_FILENAME) as KEV_file:
-            KEV_data = KEV_file.read()
-            KEV_json = json.loads(KEV_data)
-    except Exception as e:
-        print(f'Error loading KEV File: {e}')
-    finally:
-        KEV_df =  pd.DataFrame.from_dict(KEV_json["vulnerabilities"])
-        result = KEV_df.loc[KEV_df["cveID"] == cve]
-        ransomwareUse = result["knownRansomwareCampaignUse"].values
-        print(f'Ransomware: {ransomwareUse}')
-        return ransomwareUse
+
+def update_KEV():
+    """ Checks to see if the KEV JSON file exists and will call get_KEV() if required """
+    if exists(KEV_FILENAME):
+        print("The 'known_exploited_vulnerabilities.json' exists on the system\n")
+    else:
+        print("File does not exist")
+        update = input("CISA KEV file does not exist, download it now (y/n): ")
+        if update == 'y':
+            get_KEV()
+        else:
+            print('The KEV JSON file has not been downloaded')
 
 
 def get_KEV():
+    """ Downloads the KEV JSON file """
     url = ('https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json')
     filename='known_exploited_vulnerabilities.json'
 
@@ -47,21 +46,35 @@ def get_KEV():
     finally:
         print("CISA KEV List downloaded")
 
+ 
+def load_KEV_data(cve: str = "CVE-2021-21017"):
+    """ Returns the KEV dataset as a pd.Dataframe """
+    try:
+        with open(KEV_FILENAME) as KEV_file:
+            KEV_data = KEV_file.read()
+            KEV_json = json.loads(KEV_data)
+    except Exception as e:
+        print(f'Error loading KEV File: {e}')
+        return e
+    finally:
+        KEV_df =  pd.DataFrame.from_dict(KEV_json["vulnerabilities"])
+        return KEV_df
 
-def update_KEV():
-    if exists(KEV_FILENAME):
-        print("The 'known_exploited_vulnerabilities.json' exists on the system")
-    else:
-        print("File does not exist")
-        update = input("CISA KEV file does not exist, download it now (y/n): ")
-        if update == 'y':
-            get_KEV()
-        else:
-            print('The KEV JSON file has not been downloaded')
-            
 
+def build_KEV_report(KEV_df: pd.DataFrame, cveIDs: list):        
+        
+        for cve in cveIDs:
+            result = KEV_df.loc[KEV_df["cveID"] == cve[0]]
+            print(len(result.values))
+            if len(result.values) == 0:
+                print("No KEV results")
+            else:
+                ransomwareUse = result["knownRansomwareCampaignUse"].values
+                print(f'Ransomware: {ransomwareUse}')
+
+           
 def extract_CVEs(path: str = 'VulnerabilityReport.xlsx', sheet: str = 'CVE', column: str = 'CVE'):
-
+    """ Extracts CVEs from provided report, returns data as tuple """
     cols = [column]
     try:
         df = pd.read_excel(path, sheet_name=sheet, usecols=cols)
@@ -82,13 +95,16 @@ def extract_CVEs(path: str = 'VulnerabilityReport.xlsx', sheet: str = 'CVE', col
                 
         cve_tuple = tuple(cve_list)
     
-    print(f'{len(cve_tuple)} unique CVEs processed')    
+    number_of_cves = len(cve_tuple)
+    time_to_process = number_of_cves / 10
+    
+    print(f'{number_of_cves} unique CVEs processed, this process will take roughly {time_to_process} minutes to run due to NVD API rate limiting')    
     return cve_tuple
 
 
-def get_CVE_data(cve_tuple: tuple):
-    
-    # response
+def get_CVE_data_from_NVD(cve_tuple: tuple):
+    """ Extracts data from the National Vulnerability Database """
+    cve_list = []
     
     for cve in cve_tuple:
         total_url = NVD_URL+cve      
@@ -121,6 +137,8 @@ def get_CVE_data(cve_tuple: tuple):
             if vulnStatus == "Rejected":
                 print(f'{cve} was {vulnStatus} by NVD with a description of: {descriptions_value}')
                 
+                cve_list.append([cve, vulnStatus, "None", "None"])
+                
             elif vulnStatus != "Rejected":
                 cve_keys = response_json["vulnerabilities"][0]['cve']['metrics'].keys()
                 if "cvssMetricV31" in cve_keys:
@@ -128,11 +146,13 @@ def get_CVE_data(cve_tuple: tuple):
                     baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['baseScore']
                     baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['baseSeverity']
                     print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
+                    cve_list.append([cve, vulnStatus, baseScore, baseSeverity])
                 elif "cvssMetricV30" in cve_keys:
                     # print(f'{cve} has cvssMetricV30')
                     baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['baseScore']
                     baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['baseSeverity']
                     print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
+                    cve_list.append([cve, vulnStatus, baseScore, baseSeverity])
                 elif "cvssMetricV2" in cve_keys:
                     # print(f'{cve} has cvssMetricV2')
                     cvssData_keys = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData'].keys()
@@ -141,23 +161,33 @@ def get_CVE_data(cve_tuple: tuple):
                         baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseScore']
                         baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseSeverity']
                         print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
+                        cve_list.append([cve, vulnStatus, baseScore, baseSeverity])
                     elif "baseSeverity" not in cvssData_keys:
                         # print('No Sev')
                         baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseScore']
-                        print(f'{cve:} has a base score of [{baseScore}]')
+                        print(f'{cve:} has a base score of [{baseScore}] and a base severity of !N/A!')
+                        cve_list.append([cve, vulnStatus, baseScore, "N/A"])
                 else:
                     print('Unknown CVSS standard')
-                    
-            # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
             
         time.sleep(SLEEP_TIMER)
+        
+    return cve_list
 
 
 if __name__ == "__main__":
-    print("Welcome to CVE Parse")
+    test_cveISs = ("CVE-2021-27103", "CVE-2021-21017", "CVE-2017-0170", "CVE-2023-4128", "CVE-2015-2808")
+    
+    print("Welcome to CVE Parse and Process, this program will take as an input \n",
+          "a file containing vulnerabilities and process them against the NVD and \n",
+          "CISA KEV database to identify what CVEs are being actively exploited and \n",
+          "being used for ransomware attacks.  The limiting factor of this program's \n",
+          "efficiency is the rate limit on the NVD API\n\n")
+    
     
     update_KEV()
-    load_KEV_data()
-    CVEs = extract_CVEs(path='VulnerabilityReport.xlsx', sheet="CVE", column="CVE")
-    get_CVE_data(CVEs)
+    KEV_df = load_KEV_data()
+    # CVEs = extract_CVEs(path='VulnerabilityReport.xlsx', sheet="CVE", column="CVE")
+    cve_data = get_CVE_data_from_NVD(test_cveISs)
+    build_KEV_report(KEV_df=KEV_df, cveIDs=cve_data)
 
