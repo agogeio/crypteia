@@ -1,4 +1,4 @@
-# import nvdlib
+import json
 import os
 import pandas as pd
 import requests
@@ -12,6 +12,7 @@ KEV_FILENAME = 'known_exploited_vulnerabilities.json'
 #! the rate limit with an API key is 50 requests in a rolling 30 second window. 
 API_KEY = os.environ.get("nvd_key")
 NVD_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId="
+SLEEP_TIMER = 6
 
 cve_list = []
 cve_tuple = ()
@@ -19,8 +20,20 @@ vuln_medium = ()
 vuln_high = ()
 vuln_critical = ()
 
-def get_KEV_filename():
-    return 'known_exploited_vulnerabilities.json'
+def load_KEV_data(cve: str = "CVE-2021-21017"):
+    
+    try:
+        with open(KEV_FILENAME) as KEV_file:
+            KEV_data = KEV_file.read()
+            KEV_json = json.loads(KEV_data)
+    except Exception as e:
+        print(f'Error loading KEV File: {e}')
+    finally:
+        KEV_df =  pd.DataFrame.from_dict(KEV_json["vulnerabilities"])
+        result = KEV_df.loc[KEV_df["cveID"] == cve]
+        ransomwareUse = result["knownRansomwareCampaignUse"].values
+        print(f'Ransomware: {ransomwareUse}')
+        return ransomwareUse
 
 
 def get_KEV():
@@ -34,6 +47,18 @@ def get_KEV():
     finally:
         print("CISA KEV List downloaded")
 
+
+def update_KEV():
+    if exists(KEV_FILENAME):
+        print("The 'known_exploited_vulnerabilities.json' exists on the system")
+    else:
+        print("File does not exist")
+        update = input("CISA KEV file does not exist, download it now (y/n): ")
+        if update == 'y':
+            get_KEV()
+        else:
+            print('The KEV JSON file has not been downloaded')
+            
 
 def extract_CVEs(path: str = 'VulnerabilityReport.xlsx', sheet: str = 'CVE', column: str = 'CVE'):
 
@@ -59,18 +84,6 @@ def extract_CVEs(path: str = 'VulnerabilityReport.xlsx', sheet: str = 'CVE', col
     
     print(f'{len(cve_tuple)} unique CVEs processed')    
     return cve_tuple
-    
-
-def update_KEV():
-    if exists(KEV_FILENAME):
-        print("The 'known_exploited_vulnerabilities.json' exists on the system")
-    else:
-        print("File does not exist")
-        update = input("CISA KEV file does not exist, download it now (y/n): ")
-        if update == 'y':
-            get_KEV()
-        else:
-            print('The KEV JSON file has not been downloaded')
 
 
 def get_CVE_data(cve_tuple: tuple):
@@ -137,14 +150,14 @@ def get_CVE_data(cve_tuple: tuple):
                     
             # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
             
-        time.sleep(6)
-            
+        time.sleep(SLEEP_TIMER)
 
-    
 
 if __name__ == "__main__":
     print("Welcome to CVE Parse")
     
     update_KEV()
+    load_KEV_data()
     CVEs = extract_CVEs(path='VulnerabilityReport.xlsx', sheet="CVE", column="CVE")
     get_CVE_data(CVEs)
+
