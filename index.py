@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import pandas as pd
@@ -107,7 +108,8 @@ def extract_CVEs(path: str = 'VulnerabilityReport.xlsx', sheet: str = 'CVE', col
     number_of_cves = len(cve_tuple)
     time_to_process = number_of_cves / 10
     
-    print(f'{number_of_cves} unique CVEs processed, this process will take roughly {time_to_process} minutes to run due to NVD API rate limiting\n')    
+    print(f'{number_of_cves} unique CVEs processed, this process will take roughly {time_to_process} minutes to run due to NVD API rate limiting') 
+    print(f'Processing start time begins at: {datetime.datetime.now()}\n')
     return cve_tuple
 
 
@@ -140,45 +142,49 @@ def load_CVE_from_NVD(cve_tuple: tuple):
         except Exception as e:
             print(f'CVE Processing Error: {e}')
         finally:
-            vulnStatus = response_json["vulnerabilities"][0]['cve']['vulnStatus']
-            descriptions_value = response_json["vulnerabilities"][0]['cve']['descriptions'][0]['value']
+            
+            if response_json["totalResults"] == 0:
+                cve_list.append([cve, "Invalid", "N/A", "N/A"])
+            else:            
+                vulnStatus = response_json["vulnerabilities"][0]['cve']['vulnStatus']
+                descriptions_value = response_json["vulnerabilities"][0]['cve']['descriptions'][0]['value']
 
-            if vulnStatus == "Rejected":
-                # print(f'{cve} was {vulnStatus} by NVD with a description of: {descriptions_value}')
-                cve_list.append([cve, vulnStatus, "None", "None"])
-                
-            elif vulnStatus != "Rejected":
-                cve_keys = response_json["vulnerabilities"][0]['cve']['metrics'].keys()
-                if "cvssMetricV31" in cve_keys:
-                    # print(f'{cve} has cvssMetricV31')
-                    baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['baseScore']
-                    baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['baseSeverity']
-                    # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
-                    cve_list.append([cve, vulnStatus, baseScore, baseSeverity])
-                elif "cvssMetricV30" in cve_keys:
-                    # print(f'{cve} has cvssMetricV30')
-                    baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['baseScore']
-                    baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['baseSeverity']
-                    # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
-                    cve_list.append([cve, vulnStatus, baseScore, baseSeverity])
-                elif "cvssMetricV2" in cve_keys:
-                    # print(f'{cve} has cvssMetricV2')
-                    cvssData_keys = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData'].keys()
-                    if "baseSeverity" in cvssData_keys:
-                        # print('Sev')
-                        baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseScore']
-                        baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseSeverity']
+                if vulnStatus == "Rejected":
+                    # print(f'{cve} was {vulnStatus} by NVD with a description of: {descriptions_value}')
+                    cve_list.append([cve, vulnStatus, "N/A", "N/A"])
+                    
+                elif vulnStatus != "Rejected":
+                    cve_keys = response_json["vulnerabilities"][0]['cve']['metrics'].keys()
+                    if "cvssMetricV31" in cve_keys:
+                        # print(f'{cve} has cvssMetricV31')
+                        baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['baseScore']
+                        baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['baseSeverity']
                         # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
                         cve_list.append([cve, vulnStatus, baseScore, baseSeverity])
-                    elif "baseSeverity" not in cvssData_keys:
-                        # print('No Sev')
-                        baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseScore']
-                        # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !N/A!')
-                        cve_list.append([cve, vulnStatus, baseScore, "N/A"])
-                else:
-                    print('Unknown CVSS standard')
-            
-        time.sleep(SLEEP_TIMER)
+                    elif "cvssMetricV30" in cve_keys:
+                        # print(f'{cve} has cvssMetricV30')
+                        baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['baseScore']
+                        baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['baseSeverity']
+                        # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
+                        cve_list.append([cve, vulnStatus, baseScore, baseSeverity])
+                    elif "cvssMetricV2" in cve_keys:
+                        # print(f'{cve} has cvssMetricV2')
+                        cvssData_keys = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData'].keys()
+                        if "baseSeverity" in cvssData_keys:
+                            # print('Sev')
+                            baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseScore']
+                            baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseSeverity']
+                            # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
+                            cve_list.append([cve, vulnStatus, baseScore, baseSeverity])
+                        elif "baseSeverity" not in cvssData_keys:
+                            # print('No Sev')
+                            baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseScore']
+                            # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !N/A!')
+                            cve_list.append([cve, vulnStatus, baseScore, "N/A"])
+                    else:
+                        print('Unknown CVSS standard')
+                
+            time.sleep(SLEEP_TIMER)
         
     return cve_list
 
@@ -190,7 +196,7 @@ def write_to_csv(cve_report: list):
     
 
 if __name__ == "__main__":
-    # test_cveISs = ("CVE-2021-27103", "CVE-2021-21017", "CVE-2017-0170", "CVE-2023-4128", "CVE-2015-2808")
+    test_cveIDs = ("CVE-2021-27103", "CVE-2021-21017", "CVE-2017-0170", "CVE-2023-4128", "CVE-2015-2808", "CVE-2023-40481")
 
     print("Welcome to CVE Parse and Process, this program will take as an input\n",
           "a file containing vulnerabilities and process them against the NVD and\n",
@@ -202,6 +208,7 @@ if __name__ == "__main__":
     validate_KEV_file()
     KEV_df = load_KEV_data()
     CVEs = extract_CVEs(path='VulnerabilityReport.xlsx', sheet="CVE", column="CVE")
+    # cve_data = load_CVE_from_NVD(test_cveIDs)
     cve_data = load_CVE_from_NVD(CVEs)
     cve_report = build_KEV_report(KEV_df=KEV_df, cveIDs=cve_data)
     write_to_csv(cve_report)
