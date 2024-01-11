@@ -107,7 +107,7 @@ def extract_CVEs(path: str = 'VulnerabilityReport.xlsx', sheet: str = 'CVE', col
     number_of_cves = len(cve_tuple)
     time_to_process = number_of_cves / 10
     
-    print(f'{number_of_cves} unique CVEs processed, this process will take roughly {time_to_process} minutes to run due to NVD API rate limiting')    
+    print(f'{number_of_cves} unique CVEs processed, this process will take roughly {time_to_process} minutes to run due to NVD API rate limiting\n')    
     return cve_tuple
 
 
@@ -191,12 +191,12 @@ def write_to_csv(cve_report: list):
 
 if __name__ == "__main__":
     # test_cveISs = ("CVE-2021-27103", "CVE-2021-21017", "CVE-2017-0170", "CVE-2023-4128", "CVE-2015-2808")
-    
+
     print("Welcome to CVE Parse and Process, this program will take as an input\n",
           "a file containing vulnerabilities and process them against the NVD and\n",
           "CISA KEV database to identify what CVEs are being actively exploited and\n",
           "being used for ransomware attacks.  The limiting factor of this program's\n",
-          "efficiency is the rate limit on the NVD API\n\n")
+          "efficiency is the rate limit on the NVD API\n")
     
     
     validate_KEV_file()
