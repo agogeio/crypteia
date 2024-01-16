@@ -6,3 +6,4 @@ known_exploited_vulnerabilities.json
 **/Scripts/**
 **/Lib/**
 **/Include/**
+**/NVDData/**
