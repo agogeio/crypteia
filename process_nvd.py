@@ -12,7 +12,7 @@ nvd_data_files = ["nvdcve-1.1-2002.json", "nvdcve-1.1-2003.json", "nvdcve-1.1-20
                   "nvdcve-1.1-2020.json", "nvdcve-1.1-2021.json", "nvdcve-1.1-2022.json",
                   "nvdcve-1.1-2023.json"]
 
-nvd_data_dir = "./NVDData/"
+nvd_data_dir = "./nvd_data/"
 nvd_master_file = "nvd_master.json"
 nvd_master_json_file = nvd_data_dir+nvd_master_file
 

@@ -217,25 +217,36 @@ def enrich_vuldb(cve_data: list, baseSeverity: list = ["CRITICAL"]):
         except Exception as e:
             print(f"Error: {e}")
         finally:
-            if response_json["response"]["error"] == "API rate exceeded":
+            
+            #* in a good call the top level keys are: response, request, result
+            vuldb_response_keys = response_json["response"].keys()
+ 
+            print(response_json["request"]["value"])
+            print(response_json["result"][0]["entry"]["details"]["exploit"])
+
+            vuldb_response_keys = response_json["response"].keys()
+
+            if "error" in vuldb_response_keys:
                 print("Your number of vuldb API calls for today has been exceeded")
-            else:
-                vuldb_details_keys = response_json["result"][0]["entry"]["details"].keys()
-                # print(vuldb_details_keys)
-                vuldb_exploit_keys = response_json["result"][0]["exploit"].keys()
-                print(vuldb_exploit_keys)
-                if "exploit" in vuldb_details_keys:
-                    print("exploit ", response_json["result"][0]["entry"]["details"]["exploit"])
-                    details_exploit = response_json["result"][0]["entry"]["details"]["exploit"]
-                else:
-                    details_exploit = "No exploit data available in vuldb"
+            # if response_json["response"]["error"] == "API rate exceeded":
+            #     print("Your number of vuldb API calls for today has been exceeded")
+            # elif :
+            #     vuldb_details_keys = response_json["result"][0]["entry"]["details"].keys()
+            #     # print(vuldb_details_keys)
+            #     vuldb_exploit_keys = response_json["result"][0]["exploit"].keys()
+            #     print(vuldb_exploit_keys)
+            #     if "exploit" in vuldb_details_keys:
+            #         print("exploit ", response_json["result"])
+            #         details_exploit = response_json["result"][0]["entry"]["details"]["exploit"]
+            #     else:
+            #         details_exploit = "No exploit data available in vuldb"
                 
-                if "exploitability" in vuldb_exploit_keys:
-                    print("exploitability ", response_json["result"][0]["exploit"]["exploitability"])
-                    exploitability = response_json["result"][0]["exploit"]["exploitability"]
-                else:
-                    exploitability = "No exploitability data in vuldb"
-        
+            #     if "exploitability" in vuldb_exploit_keys:
+            #         print("exploitability ", response_json["result"])
+            #         exploitability = response_json["result"][0]["exploit"]["exploitability"]
+            #     else:
+            #         exploitability = "No exploitability data in vuldb"
+
 
 if __name__ == "__main__":
     test_cveIDs = ("CVE-2021-27103", "CVE-2021-21017", "CVE-2017-0170", "CVE-2023-4128", "CVE-2015-2808", "CVE-2023-40481")
@@ -258,7 +269,7 @@ if __name__ == "__main__":
     cve_data = load_CVE_from_NVD(test_cveIDs)
     
     cve_report = build_KEV_report(KEV_df=KEV_df, cveIDs=cve_data)
-    enriched_cve_report = enrich_vuldb(cve_report, ["CRITICAL", "HIGH"])
+    enriched_cve_report = enrich_vuldb(cve_report)
     write_to_csv(cve_report, REPORT_NAME)
 
     print(f"Total Processing Time: {round((time.time() - start)/60, 2)} minutes")
