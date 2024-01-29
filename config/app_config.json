@@ -44,7 +44,8 @@
     "EPSS_GZ_FILE": "epss_data.csv.gz",
 
     "EXPLOITDB_DIR":"./data/exploitdb/",
-    "EXPLOITDB_FILE":"ghdb.xml",
+    "EXPLOITDB_XML_FILE":"ghdb.xml",
+    "EXPLOITDB_EXCEL_FILE":"ghdb.xlsx",
 
     "NVD_DATA_DIR": "./data/nvd/",
     "NVD_FILE": "nvd_database.json",

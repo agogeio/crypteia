@@ -7,11 +7,12 @@ import shutil
 import sys
 import time
 
+import xml.etree as etree
+
 from datetime import datetime
 from urllib.request import urlretrieve
 
 NVD_API_KEY = os.environ.get("NVD_API_KEY")
-VULDB_API_KEY = os.environ.get("VULDB_API_KEY")
 
 
 def cve_config_bootstrap():
@@ -23,26 +24,22 @@ def cve_config_bootstrap():
     user_config_file = "./config/user_config.json"
     
     if os.path.isfile(app_config_file):
-        print("Application configuration file located")
-    
         try:
             with open(app_config_file, 'r', encoding='utf-8') as app_config:
                 app_config_obj = json.load(app_config)
         except Exception as e:
-            print(f"Error accessing the application configuration file: {e}")
-        finally:
-            print("Application configuration settings read")
-
+            sys.exit(f"Error accessing the application configuration file: {e}")
+        else:
+            print(f"Application configuration settings loaded from: {app_config_file}")
     
     if os.path.isfile(user_config_file):
-        print("User config file located")
         try:
             with open(user_config_file, 'r', encoding='utf-8') as user_config:
                 user_config_obj = json.load(user_config)
         except Exception as e:
-            print(f"Error accessing the user configuration file: {e}")
-        finally:
-            print("User configuration settings read")
+            sys.exit(f"Error accessing the user configuration file: {e}")
+        else:
+            print(f"User configuration settings loaded from: {user_config_file}")
 
     return app_config_obj, user_config_obj
 
@@ -81,15 +78,11 @@ def download_KEV_file(app_config: dict, user_config: dict):
         try:
             if not os.path.exists(CISA_KEV_DIR):
                 os.makedirs(CISA_KEV_DIR)
-                print(f"Creating directory {CISA_KEV_DIR}")
-            
             urlretrieve(url=CISA_KEV_DOWNLOAD_URL, filename=CISA_KEV_PATH)
         except Exception as e:
-            print("The following error ocurred: ", e )
-            sys.exit("Failed to process CISA KEV file")
-        finally:
-            # No code to execute on failure
-            pass
+            sys.exit(f"Failed to process CISA KEV file with error: {e}")
+        else:
+            print(f"Updated CISA KEV file at: {CISA_KEV_PATH}")
 
 
 def download_EPSS_file(app_config: dict, user_config: dict):
@@ -138,11 +131,9 @@ def download_EPSS_file(app_config: dict, user_config: dict):
 
             os.remove(EPSS_GZ_PATH)
         except Exception as e:
-            print("The following error ocurred: ", e )
-            sys.exit("Failed to process EPSS file")
-        finally:
-            # No code to execute on failure
-            pass
+            sys.exit(f"Failed to process EPSS file: {e}")
+        else:
+            print(f"Updated EPSS file at: {EPSS_PATH}")
 
         
 def download_EXPLOITDB_file(app_config: dict, user_config: dict):
@@ -152,8 +143,8 @@ def download_EXPLOITDB_file(app_config: dict, user_config: dict):
     
     EXPLOITDB_DOWNLOAD_URL = app_config["download_URLs"]["EXPLOITDB_DOWNLOAD_URL"]
     EXPLOITDB_DIR=app_config["EXPLOITDB_DIR"]
-    EXPLOITDB_FILE=app_config["EXPLOITDB_FILE"]
-    EXPLOITDB_PATH=EXPLOITDB_DIR+EXPLOITDB_FILE
+    EXPLOITDB_XML_FILE=app_config["EXPLOITDB_XML_FILE"]
+    EXPLOITDB_PATH=EXPLOITDB_DIR+EXPLOITDB_XML_FILE
     
     ExploitDB_download = False
     
@@ -183,11 +174,36 @@ def download_EXPLOITDB_file(app_config: dict, user_config: dict):
             
             urlretrieve(url=EXPLOITDB_DOWNLOAD_URL, filename=EXPLOITDB_PATH)
         except Exception as e:
-            print("The following error ocurred: ", e )
-            sys.exit("Failed to process ExploitDB file")
-        finally:
-            # No code to execute on failure
-            pass       
+            sys.exit(f"Failed to process ExploitDB file: {e}")
+        else:
+            print(f"Updated ExploitDB file at: {EXPLOITDB_PATH}")   
+
+
+def EXPLOITDB_cve_extract(app_config: dict):
+    """ Enrich CVE data with exploit data from ExploitDB SearchSploit """
+    
+    print("\n***** Beginning data enrichment with ExploitDB SearchSploit data *****\n")
+    
+    searchsploit_xml_path = app_config["EXPLOITDB_DIR"]+app_config["EXPLOITDB_XML_FILE"]
+    searchsploit_excel_path = app_config["EXPLOITDB_DIR"]+app_config["EXPLOITDB_EXCEL_FILE"]
+    
+    try:
+        print(f"Attempting to process: {searchsploit_xml_path}")    
+        searchsploit_df = pd.read_xml(searchsploit_xml_path, parser="etree")
+        filtered_searchsploit_df = searchsploit_df[["id","link","edb","textualDescription"]]
+        searchsploit_cve_only_df = filtered_searchsploit_df[filtered_searchsploit_df["textualDescription"].str.contains('CVE:')]
+    except Exception as e:
+        sys.exit(f"Unable to process ExploitDB file with error: {e}")
+    else:
+        print(f"Extracted all CVE data from file: {searchsploit_xml_path}")
+        print(searchsploit_cve_only_df)
+        
+        try:
+            searchsploit_cve_only_df.to_excel(searchsploit_excel_path)
+        except Exception as e:
+            sys.exit(f"Error writing Excel file to: {searchsploit_excel_path}")
+        else:
+            print(f"Excel file written to: {searchsploit_excel_path}")
 
 
 def download_NVD_files(app_config: dict, user_config: dict):
@@ -331,26 +347,26 @@ def extract_CVEs(app_config: dict, user_config: dict):
             df = pd.read_excel(vulnerability_report_path, sheet_name=USER_VULNERABILITY_SHEET_NAME, usecols=[USER_VULNERABILITY_COLUMN_NAME])
             #! df.dropna() will drop the NaN from the specified column
             df = df.dropna(subset=cols[0])
-        except Exception as e:
-            print("There was an error:", e)
-        finally:
-            # pass
             np_cve = pd.DataFrame(df[USER_VULNERABILITY_COLUMN_NAME].unique())
-        
+        except Exception as e:
+            sys.exit("There was an error:", e)
+        else:
             for cve_collection in np_cve[0]:
                 split_cve = cve_collection.split(',')
                 for cve in split_cve:
                     cve_list.append(cve)
             cve_tuple = tuple(cve_list)
+            print(f"Successfully created DataFrame from {vulnerability_report_path} ")
+            
         return cve_tuple
 
 
-def calculate_NVD_run_time(CVEs: tuple):
+def calculate_NVD_run_time(unique_cves: tuple):
     """Calculate the run time for data processing"""
     
     print("\n***** Calculate the approximate run time for CVE processing *****\n")
     
-    number_of_cves = len(CVEs)
+    number_of_cves = len(unique_cves)
     nvd_sleep_timer = 6
     
     if 'NVD_API_KEY' not in os.environ:
@@ -371,7 +387,7 @@ def calculate_NVD_run_time(CVEs: tuple):
     return nvd_sleep_timer
 
 
-def load_CVE_from_NVD(app_config: dict, user_config: dict, cve_tuple: tuple, nvd_sleep_timer: 6):
+def load_CVE_from_NVD(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
     """ Extracts data from the National Vulnerability Database """
     
     print("\n***** Using NVD API for CVE processing *****\n")
@@ -383,13 +399,12 @@ def load_CVE_from_NVD(app_config: dict, user_config: dict, cve_tuple: tuple, nvd
     
     print(f"NVD sleep timer is set to {nvd_sleep_timer}")
     
-    for cve in cve_tuple:
+    for cve in unique_cves:
         total_url = NVD_URL+cve      
         baseScore = ""
         baseSeverity = ""
         attackVector = ""
         attackComplexity = ""
-        
 
         # print(f'Processing CVE id: {cve} with URL of: {total_url}')        
         #! Modified CVE
@@ -409,9 +424,7 @@ def load_CVE_from_NVD(app_config: dict, user_config: dict, cve_tuple: tuple, nvd
             response_json = response.json()
             print(f"[{counter}] Processing: {total_url}")
             counter += 1
-            
             if response_json["totalResults"] == 0:
-                # print(f'{cve} invalid with totalResults of 0')
                 cve_list.append([cve, "Invalid", "None", "None", "None", "None"])
             else:            
                 vulnStatus = response_json["vulnerabilities"][0]['cve']['vulnStatus']
@@ -456,7 +469,7 @@ def load_CVE_from_NVD(app_config: dict, user_config: dict, cve_tuple: tuple, nvd
             time.sleep(nvd_sleep_timer)
         except Exception as e:
             print(f"Error Processing: {total_url}")
-            print(f'CVE Processing Error: {e}')
+            print(f'Processing Error was: {e}')
         finally:
             pass
             # Nothing to do in finally
@@ -474,13 +487,12 @@ def load_KEV_data(app_config: dict):
     try:
         with open(KEV_filename) as KEV_file:
             KEV_data = KEV_file.read()
-            KEV_json = json.loads(KEV_data)
-            KEV_df =  pd.DataFrame.from_dict(KEV_json["vulnerabilities"])
     except Exception as e:
-        print(f'Error loading KEV File: {e}')
-        return e
-    finally:
-        pass
+        sys.exit(f'Error loading KEV File: {e}')
+    else:
+        KEV_json = json.loads(KEV_data)
+        KEV_df =  pd.DataFrame.from_dict(KEV_json["vulnerabilities"])
+        print(f"Loaded the following file into DataFrame with success: {KEV_filename}")
         
     return KEV_df
 
@@ -491,18 +503,18 @@ def build_KEV_report(KEV_df: pd.DataFrame, cveIDs: list):
     
     cves = cveIDs      
     for cve in cves:
-        current_cve = cve[0]
         result = KEV_df.loc[KEV_df["cveID"] == cve[0]]
         if len(result.values) == 0:
-            # print(f"{current_cve} was not found in the KEV database")
             cve.append("Not in KEV")
             cve.append("Not in KEV")
         else:
             ransomwareUse = result["knownRansomwareCampaignUse"].values
-            # print(f'{current_cve} Found in KEV database ransomwareStatus is: {ransomwareUse[0]}')
             cve.append("In KEV")
             cve.append(ransomwareUse[0])
-    return cves 
+    
+    print("KEV data processing complete")        
+    
+    return cves
 
 
 def write_to_csv(cve_report: list, user_config: dict):
@@ -513,81 +525,32 @@ def write_to_csv(cve_report: list, user_config: dict):
     date_time = now.strftime("%m-%d-%Y-%H-%M")
     file_path = user_config["USER_PROCESSED_VULNERABILITY_REPORT_DIR"]+date_time+"-"+user_config["USER_PROCESSED_VULNERABILITY_REPORT_BASE_NAME"]
     
-    print(file_path)
-    
     try:
         cve_df = pd.DataFrame(cve_report, columns=['cveID', 'vulnStatus', 'baseScore', 'baseSeverity', 'attackVector', 'accessComplexity', 'isKEV', 'knownRansomwareCampaignUse'])
         cve_df.to_excel(file_path)
     except Exception as e:
-        print(f"Error processing file: {e}")
+        sys.exit(f"Error processing file: {e}")
     else:
-        print(f"Wrote file: {file_path}")
-
-
-def enrich_vuldb(cve_data: list, baseSeverity: list = ["CRITICAL"]):
-    
-    cve_df = pd.DataFrame(cve_data, columns=['cveID', 'vulnStatus', 'baseScore', 'baseSeverity', 'attackVector', 'accessComplexity', 'isKEV', 'knownRansomwareCampaignUse', ])
-    selected_cve_df = cve_df.loc[cve_df['baseSeverity'].isin(baseSeverity)]
-    HEADER = {'X-VulDB-ApiKey': VULDB_API_KEY}
-    
-    for index, row in selected_cve_df.iterrows():
-        cve = row["cveID"]
-        vuldb_url = "https://vuldb.com/?api"
-        cve_vuldb_search_data = {
-            "search": cve,
-            "details": "1"
-        }
-
-        try:
-            response = requests.post(url = vuldb_url, headers = HEADER, data=cve_vuldb_search_data)
-            response_json = json.loads(response.content)
-        except Exception as e:
-            print(f"Error: {e}")
-        finally:
-            
-            #* in a good call the top level keys are: response, request, result
-            vuldb_response_keys = response_json["response"].keys()
- 
-            print(response_json["request"]["value"])
-            print(response_json["result"][0]["entry"]["details"]["exploit"])
-
-            vuldb_response_keys = response_json["response"].keys()
-
-            if "error" in vuldb_response_keys:
-                print("Your number of vuldb API calls for today has been exceeded")
-            # if response_json["response"]["error"] == "API rate exceeded":
-            #     print("Your number of vuldb API calls for today has been exceeded")
-            # elif :
-            #     vuldb_details_keys = response_json["result"][0]["entry"]["details"].keys()
-            #     # print(vuldb_details_keys)
-            #     vuldb_exploit_keys = response_json["result"][0]["exploit"].keys()
-            #     print(vuldb_exploit_keys)
-            #     if "exploit" in vuldb_details_keys:
-            #         print("exploit ", response_json["result"])
-            #         details_exploit = response_json["result"][0]["entry"]["details"]["exploit"]
-            #     else:
-            #         details_exploit = "No exploit data available in vuldb"
-                
-            #     if "exploitability" in vuldb_exploit_keys:
-            #         print("exploitability ", response_json["result"])
-            #         exploitability = response_json["result"][0]["exploit"]["exploitability"]
-            #     else:
-            #         exploitability = "No exploitability data in vuldb"
+        print(f"Wrote processed report to file: {file_path}")
+        
+    return file_path
 
 
 if __name__ == "__main__":
     start = time.time()
     
     app_config, user_config = cve_config_bootstrap()
-    unique_cves  = extract_CVEs(app_config, user_config)
-    download_KEV_file(app_config, user_config)
-    download_EPSS_file(app_config, user_config)
-    download_EXPLOITDB_file(app_config, user_config)
-    download_NVD_files(app_config, user_config)
-    NVD_sleep_timer = calculate_NVD_run_time(unique_cves)
-    cve_data = load_CVE_from_NVD(app_config, user_config, unique_cves, NVD_sleep_timer)
-    CISA_KEV_DataFrame = load_KEV_data(app_config)
+    unique_cves  = extract_CVEs(app_config=app_config, user_config=user_config)
+    download_KEV_file(app_config=app_config, user_config=user_config)
+    download_EPSS_file(app_config=app_config, user_config=user_config)
+    download_EXPLOITDB_file(app_config=app_config, user_config=user_config)
+    EXPLOITDB_cve_extract(app_config=app_config)
+    download_NVD_files(app_config=app_config, user_config=user_config)
+    NVD_sleep_timer = calculate_NVD_run_time(unique_cves=unique_cves)
+    cve_data = load_CVE_from_NVD(app_config=app_config, unique_cves=unique_cves, nvd_sleep_timer=NVD_sleep_timer)
+    CISA_KEV_DataFrame = load_KEV_data(app_config=app_config)
     cve_report = build_KEV_report(CISA_KEV_DataFrame, cve_data)
-    write_to_csv(cve_report, user_config)
+    
+    report_file_path = write_to_csv(cve_report=cve_report, user_config=user_config)
 
-    print(f"Total Processing Time: {round((time.time() - start)/60, 2)} minutes")
+    print(f"\nTotal Processing Time: {round((time.time() - start)/60, 2)} minutes")
