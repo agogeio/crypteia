@@ -1,8 +1,13 @@
 known_exploited_vulnerabilities.json
+.dccache
 .vscode/settings.json
+pyvenv.cfg
 *.cfg
 *.env
 *.xlsx
+/import/**
+/export/**
+**/data/**
 **/Scripts/**
 **/Lib/**
 **/Include/**

@@ -1,0 +1,18 @@
+{
+    "AUTO_DOWNLOAD_ALL": "True",
+    "AUTO_UPDATE_EPSS_DATA": "True",
+    "AUTO_UPDATE_KEV_DATA": "True",
+    "AUTO_UPDATE_EXPLOITDB_DATA": "True",
+    "USE_NVD_API": "True",
+    "USE_NVD_LOCAL": "False",
+    "AUTO_UPDATE_NVD_DATA": "False",
+    "TEST_CVE_IDs": ["CVE-2021-27103", "CVE-2021-21017", "CVE-2017-0170", "CVE-2023-4128", "CVE-2015-2808", "CVE-2023-40481"],
+    "TEST_CVE_FILE": "cve_test_file.xlsx",
+    
+    "USER_VULNERABILITY_IMPORT_REPORT_DIR": "./import/",
+    "USER_VULNERABILITY_IMPORT_REPORT_NAME": "vulnerability_scan.xlsx",
+    "USER_VULNERABILITY_SHEET_NAME": "CVE",
+    "USER_VULNERABILITY_COLUMN_NAME": "CVE",
+    "USER_PROCESSED_VULNERABILITY_REPORT_DIR": "./export/",
+    "USER_PROCESSED_VULNERABILITY_REPORT_BASE_NAME": "processed_vulnerability_report.xlsx"
+}

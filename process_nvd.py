@@ -160,5 +160,5 @@ if __name__ == "__main__":
     # process_nvd_files(nvd_data_files)
     # merge_nvd_data(["nvdcve-1.1-2002.json"])
     # merge_nvd_data(nvd_data_files)
-    df_nvd_data = load_nvd_data()
-    
+    # df_nvd_data = load_nvd_data()
+    pass

@@ -1,0 +1,57 @@
+{
+    "download_URLs": {
+        "CISA_KEV_DOWNLOAD_URL": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+
+        "EPSS_DOWNLOAD_URL" : "https://epss.cyentia.com/epss_scores-current.csv.gz",
+
+        "EXPLOITDB_DOWNLOAD_URL": "https://gitlab.com/exploit-database/exploitdb/-/raw/main/ghdb.xml",
+
+        "NVD_API_BASE_URL": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=",
+
+        "NVD_DATA_BASE_URL": "https://nvd.nist.gov/feeds/json/cve/1.1/",
+        "NVD_DATA_DOWNLOAD_URLS": [
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2002.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2003.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2004.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2005.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2006.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2007.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2008.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2009.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2010.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2011.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2012.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2013.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2014.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2015.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2016.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2017.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2018.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2019.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2020.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2021.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2022.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2023.json.gz",
+            "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2024.json.gz"
+        ]
+    },
+
+    "CISA_KEV_DIR":"./data/cisa_kev/",
+    "CISA_KEV_FILE":"known_exploited_vulnerabilities.json",
+
+    "EPSS_DIR": "./data/epss/",
+    "EPSS_FILE": "epss_data.csv",
+    "EPSS_GZ_FILE": "epss_data.csv.gz",
+
+    "EXPLOITDB_DIR":"./data/exploitdb/",
+    "EXPLOITDB_FILE":"ghdb.xml",
+
+    "NVD_DATA_DIR": "./data/nvd/",
+    "NVD_FILE": "nvd_database.json",
+
+    "VULNERABILITY_IMPORT_REPORT_DIR": "./import/",
+    "VULNERABILITY_IMPORT_REPORT_NAME": "vulnerability_scan.xlsx",
+
+    "PROCESSED_VULNERABILITY_REPORT_DIR": "./export/",
+    "PROCESSED_VULNERABILITY_REPORT_BASE_NAME": "processed_vulnerability_report.xlsx"
+}
