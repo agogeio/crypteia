@@ -196,8 +196,6 @@ def EXPLOITDB_cve_extract(app_config: dict):
         sys.exit(f"Unable to process ExploitDB file with error: {e}")
     else:
         print(f"Extracted all CVE data from file: {searchsploit_xml_path}")
-        print(searchsploit_cve_only_df)
-        
         try:
             searchsploit_cve_only_df.to_excel(searchsploit_excel_path)
         except Exception as e:
