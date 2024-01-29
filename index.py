@@ -7,20 +7,11 @@ import shutil
 import sys
 import time
 
-
-# from os.path import exists, isfile
 from datetime import datetime
 from urllib.request import urlretrieve
 
 NVD_API_KEY = os.environ.get("NVD_API_KEY")
 VULDB_API_KEY = os.environ.get("VULDB_API_KEY")
-
-
-cve_list = []
-cve_tuple = ()
-vuln_medium = ()
-vuln_high = ()
-vuln_critical = ()
 
 
 def cve_config_bootstrap():
@@ -326,6 +317,7 @@ def extract_CVEs(app_config: dict, user_config: dict):
     USER_VULNERABILITY_COLUMN_NAME = user_config["USER_VULNERABILITY_COLUMN_NAME"]
     
     cols = [USER_VULNERABILITY_COLUMN_NAME]
+    cve_list = []
     
     vulnerability_report_path = USER_VULNERABILITY_IMPORT_REPORT_DIR+USER_VULNERABILITY_IMPORT_REPORT_NAME
     
