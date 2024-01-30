@@ -1,0 +1,10 @@
+Pandas Notes:
+
+Resources
+https://www.golinuxcloud.com/filter-pandas-dataframe-by-column-value/
+
+str.contains - searching a field in pandas
+searchsploit_cve_only_df = filtered_searchsploit_df[filtered_searchsploit_df["textualDescription"].str.contains('CVE:')]
+
+str.contains - eliminating a field in pandas using the '~' operator
+searchsploit_cve_only_df = searchsploit_cve_with_dorks_df[~searchsploit_cve_with_dorks_df["textualDescription"].str.contains('Dork')]

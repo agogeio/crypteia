@@ -7,7 +7,7 @@ import shutil
 import sys
 import time
 
-import xml.etree as etree
+# import xml.etree as etree
 
 from datetime import datetime
 from urllib.request import urlretrieve
@@ -186,12 +186,19 @@ def EXPLOITDB_cve_extract(app_config: dict):
     
     searchsploit_xml_path = app_config["EXPLOITDB_DIR"]+app_config["EXPLOITDB_XML_FILE"]
     searchsploit_excel_path = app_config["EXPLOITDB_DIR"]+app_config["EXPLOITDB_EXCEL_FILE"]
+    EXPLOITDB_EXCLUSION_WORDS = app_config["EXPLOITDB_EXCLUSION_WORDS"]
     
     try:
         print(f"Attempting to process: {searchsploit_xml_path}")    
         searchsploit_df = pd.read_xml(searchsploit_xml_path, parser="etree")
         filtered_searchsploit_df = searchsploit_df[["id","link","edb","textualDescription"]]
-        searchsploit_cve_only_df = filtered_searchsploit_df[filtered_searchsploit_df["textualDescription"].str.contains('CVE:')]
+        searchsploit_cve_with_dorks_df = filtered_searchsploit_df[filtered_searchsploit_df["textualDescription"].str.contains('CVE:')]
+        
+        for word in EXPLOITDB_EXCLUSION_WORDS:
+            searchsploit_cve_with_dorks_df = searchsploit_cve_with_dorks_df[~searchsploit_cve_with_dorks_df["textualDescription"].str.contains(word)]
+
+        # searchsploit_cve_with_dorks_s = searchsploit_cve_with_dorks_df['textualDescription'].str.replace('CVE: ','CVE-')
+        searchsploit_cve_only_df = searchsploit_cve_with_dorks_df
     except Exception as e:
         sys.exit(f"Unable to process ExploitDB file with error: {e}")
     else:
@@ -495,11 +502,11 @@ def load_KEV_data(app_config: dict):
     return KEV_df
 
 
-def build_KEV_report(KEV_df: pd.DataFrame, cveIDs: list):  
+def build_KEV_report(KEV_df: pd.DataFrame, cve_data: list):  
     
     print("\n***** Enhancing report data with CISA KEV data *****\n")
     
-    cves = cveIDs      
+    cves = cve_data      
     for cve in cves:
         result = KEV_df.loc[KEV_df["cveID"] == cve[0]]
         if len(result.values) == 0:
@@ -547,7 +554,7 @@ if __name__ == "__main__":
     NVD_sleep_timer = calculate_NVD_run_time(unique_cves=unique_cves)
     cve_data = load_CVE_from_NVD(app_config=app_config, unique_cves=unique_cves, nvd_sleep_timer=NVD_sleep_timer)
     CISA_KEV_DataFrame = load_KEV_data(app_config=app_config)
-    cve_report = build_KEV_report(CISA_KEV_DataFrame, cve_data)
+    cve_report = build_KEV_report(KEV_df=CISA_KEV_DataFrame, cve_data=cve_data)
     
     report_file_path = write_to_csv(cve_report=cve_report, user_config=user_config)
 
