@@ -2,18 +2,16 @@ import gzip
 import json
 import os
 import pandas as pd
+import re
 import requests
 import shutil
 import sys
 import time
 
-# import xml.etree as etree
-
 from datetime import datetime
 from urllib.request import urlretrieve
 
 NVD_API_KEY = os.environ.get("NVD_API_KEY")
-
 
 def cve_config_bootstrap():
     """Bootstrap configuration files"""
@@ -179,6 +177,18 @@ def download_EXPLOITDB_file(app_config: dict, user_config: dict):
             print(f"Updated ExploitDB file at: {EXPLOITDB_PATH}")   
 
 
+def filter_cve(EXPLOITDB_string: str):
+    """ Use for the EXPLOITDB_cve_extract() """
+    """ Used to filter string data from textualDescription from ExploitDB data """
+    
+    EXPLOITDB_string = EXPLOITDB_string.replace('CVE: ','CVE-')
+    EXPLOITDB_string = EXPLOITDB_string.replace('CVE-CVE-','CVE-')
+    
+    matches = re.search("CVE-\d{4}-\d{4}", EXPLOITDB_string)
+    cve_id = matches.group()
+    return cve_id
+
+
 def EXPLOITDB_cve_extract(app_config: dict):
     """ Enrich CVE data with exploit data from ExploitDB SearchSploit """
     
@@ -192,13 +202,19 @@ def EXPLOITDB_cve_extract(app_config: dict):
         print(f"Attempting to process: {searchsploit_xml_path}")    
         searchsploit_df = pd.read_xml(searchsploit_xml_path, parser="etree")
         filtered_searchsploit_df = searchsploit_df[["id","link","edb","textualDescription"]]
+
+        # Print out complete XML database to an Excel file
+        # filtered_searchsploit_df.to_excel("./data/exploitdb/ghdb_total.xlsx")
+        
         searchsploit_cve_with_dorks_df = filtered_searchsploit_df[filtered_searchsploit_df["textualDescription"].str.contains('CVE:')]
+        searchsploit_cve_with_dorks_df = searchsploit_cve_with_dorks_df.dropna()
         
         for word in EXPLOITDB_EXCLUSION_WORDS:
             searchsploit_cve_with_dorks_df = searchsploit_cve_with_dorks_df[~searchsploit_cve_with_dorks_df["textualDescription"].str.contains(word)]
 
-        # searchsploit_cve_with_dorks_s = searchsploit_cve_with_dorks_df['textualDescription'].str.replace('CVE: ','CVE-')
-        searchsploit_cve_only_df = searchsploit_cve_with_dorks_df
+        searchsploit_cve_with_dorks_df["cve_id"] = searchsploit_cve_with_dorks_df["textualDescription"].apply(filter_cve)
+        searchsploit_cve_only_df = searchsploit_cve_with_dorks_df.drop('textualDescription', axis=1)
+
     except Exception as e:
         sys.exit(f"Unable to process ExploitDB file with error: {e}")
     else:
@@ -559,3 +575,4 @@ if __name__ == "__main__":
     report_file_path = write_to_csv(cve_report=cve_report, user_config=user_config)
 
     print(f"\nTotal Processing Time: {round((time.time() - start)/60, 2)} minutes")
+

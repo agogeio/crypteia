@@ -8,3 +8,19 @@ searchsploit_cve_only_df = filtered_searchsploit_df[filtered_searchsploit_df["te
 
 str.contains - eliminating a field in pandas using the '~' operator
 searchsploit_cve_only_df = searchsploit_cve_with_dorks_df[~searchsploit_cve_with_dorks_df["textualDescription"].str.contains('Dork')]
+
+
+String replace on dataframe columns and series data
+
+searchsploit_cve_with_dorks_s = searchsploit_cve_with_dorks_df['textualDescription'].str.replace('CVE: ','CVE-')
+searchsploit_cve_with_dorks_s = searchsploit_cve_with_dorks_s.str.replace('CVE-CVE-','CVE-')
+
+
+
+You can use a function with the apply method in Pandas 
+Thank you Christian!
+
+def filter_cve(string):
+    pass
+
+searchsploit_cve_with_dorks_df["cve_id"] = searchsploit_cve_with_dorks_df["textualDescription"].apply(filter_cve)
