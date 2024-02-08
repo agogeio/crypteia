@@ -11,5 +11,6 @@ pyvenv.cfg
 **/Scripts/**
 **/Lib/**
 **/Include/**
+**/Notes/**
 **/nvd_data/**
 **/vuldb_data/**

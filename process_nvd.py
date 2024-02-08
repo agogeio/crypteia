@@ -1,33 +1,63 @@
 import json
 import pandas as pd
+import os
 import sys
 
+nvd_master_json_file = ""
 
-nvd_data_files = ["nvdcve-1.1-2002.json", "nvdcve-1.1-2003.json", "nvdcve-1.1-2004.json",
-                  "nvdcve-1.1-2005.json", "nvdcve-1.1-2006.json", "nvdcve-1.1-2007.json",
-                  "nvdcve-1.1-2008.json", "nvdcve-1.1-2009.json", "nvdcve-1.1-2010.json",
-                  "nvdcve-1.1-2011.json", "nvdcve-1.1-2012.json", "nvdcve-1.1-2013.json",
-                  "nvdcve-1.1-2014.json", "nvdcve-1.1-2015.json", "nvdcve-1.1-2016.json",
-                  "nvdcve-1.1-2017.json", "nvdcve-1.1-2018.json", "nvdcve-1.1-2019.json",
-                  "nvdcve-1.1-2020.json", "nvdcve-1.1-2021.json", "nvdcve-1.1-2022.json",
-                  "nvdcve-1.1-2023.json"]
+def cve_config_bootstrap():
+    """Bootstrap configuration files"""
+    
+    print("\n***** Beginning processing of configuration files *****\n")
+    
+    app_config_file = "./config/app_config.json"
+    user_config_file = "./config/user_config.json"
+    
+    if os.path.isfile(app_config_file):
+        try:
+            with open(app_config_file, 'r', encoding='utf-8') as app_config:
+                app_config_obj = json.load(app_config)
+        except Exception as e:
+            sys.exit(f"Error accessing the application configuration file: {e}")
+        else:
+            print(f"Application configuration settings loaded from: {app_config_file}")
+    
+    if os.path.isfile(user_config_file):
+        try:
+            with open(user_config_file, 'r', encoding='utf-8') as user_config:
+                user_config_obj = json.load(user_config)
+        except Exception as e:
+            sys.exit(f"Error accessing the user configuration file: {e}")
+        else:
+            print(f"User configuration settings loaded from: {user_config_file}")
 
-nvd_data_dir = "./nvd_data/"
-nvd_master_file = "nvd_master.json"
-nvd_master_json_file = nvd_data_dir+nvd_master_file
+    return app_config_obj, user_config_obj
 
-def process_nvd_files(nvd_data_files: list):
+
+
+
+def process_nvd_files(app_config: dict):
     impact_list = []
     impact_tuple = ()
     cve_count = 0
     cve_rejected = 0
     cve_no_cvss = 0
+    
 
+
+    nvd_data_files = []
+    nvd_data_dir = app_config["NVD_DATA_DIR"]
+    
+    for nvd_file in app_config["NVD_DATA_FILES"]:
+        nvd_data_files.append(nvd_data_dir+nvd_file)
+        
+
+    print(nvd_data_files)
+    
     for nvd_file in nvd_data_files:
-        nvd_path = nvd_data_dir+'/'+nvd_file
         
         try:
-            with open(nvd_path, encoding="utf-8") as nvd_data:
+            with open(nvd_file, encoding="utf-8") as nvd_data:
                 nvd_json = json.load(nvd_data)
                                 
                 for cve_data in nvd_json["CVE_Items"]:
@@ -74,7 +104,7 @@ def process_nvd_files(nvd_data_files: list):
                                 sys.exit()
                         else:
                             print(cve_id)
-                            print(nvd_path)
+                            print(nvd_file)
                             sys.exit()
                     except Exception as e:
                         print(e)
@@ -110,8 +140,8 @@ def process_nvd_files(nvd_data_files: list):
     
     
     
-    # impact_tuple = tuple(impact_list)
-    # print(f"Impact Tuple: \n{impact_tuple}")
+    impact_tuple = tuple(impact_list)
+    print(f"Impact Tuple: \n{impact_tuple}")
 
 
 def merge_nvd_data(nvd_data_files: list):
@@ -157,8 +187,11 @@ def load_nvd_data(nvd_json_file: str = nvd_master_json_file) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    # process_nvd_files(nvd_data_files)
+    app_config, _ =cve_config_bootstrap()
+    process_nvd_files(app_config)
+    
     # merge_nvd_data(["nvdcve-1.1-2002.json"])
+    
     # merge_nvd_data(nvd_data_files)
     # df_nvd_data = load_nvd_data()
-    pass
+    # print(df_nvd_data.count())

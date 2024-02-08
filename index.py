@@ -183,8 +183,8 @@ def filter_cve(EXPLOITDB_string: str):
     
     EXPLOITDB_string = EXPLOITDB_string.replace('CVE: ','CVE-')
     EXPLOITDB_string = EXPLOITDB_string.replace('CVE-CVE-','CVE-')
-    
-    matches = re.search("CVE-\d{4}-\d{4}", EXPLOITDB_string)
+
+    matches = re.search(r"CVE-\d{4}-\d{4,7}", EXPLOITDB_string)
     cve_id = matches.group()
     return cve_id
 
@@ -341,12 +341,64 @@ def download_NVD_files(app_config: dict, user_config: dict):
             
     #         nvd_missing_urls.append(missing_url)
     #         nvd_missing_files.append(working_nvd_file_path)
-            
+
 
 def extract_CVEs(app_config: dict, user_config: dict):
+    vendor = user_config["USER_VULNERABILITY_SCAN_VENDOR"]
+    
+    if vendor == 'T':
+        cve_tuple = extract_CVEs_Tenable(app_config, user_config)
+        return cve_tuple
+    if vendor == "R":
+        cve_tuple = extract_CVEs_Rapid7(app_config, user_config)
+        return cve_tuple
+ 
+ 
+def extract_CVEs_Rapid7(app_config: dict, user_config: dict):
     """ Extracts CVEs from provided report, returns data as tuple """
     
-    print("\n***** Beginning processing of user supplied vulnerability file *****\n")
+    print("\n***** Beginning processing of user supplied Rapid7 vulnerability file *****\n")
+ 
+    USER_VULNERABILITY_IMPORT_REPORT_DIR = user_config["USER_VULNERABILITY_IMPORT_REPORT_DIR"]
+    USER_VULNERABILITY_IMPORT_REPORT_NAME = user_config["USER_VULNERABILITY_IMPORT_REPORT_NAME"]
+    USER_VULNERABILITY_SHEET_NAME = user_config["USER_VULNERABILITY_SHEET_NAME"]
+    USER_VULNERABILITY_COLUMN_NAME = user_config["USER_VULNERABILITY_COLUMN_NAME"]
+    
+    cols = [USER_VULNERABILITY_COLUMN_NAME]
+    cve_list = []
+    cve_tuple = ()
+    
+    vulnerability_report_path = USER_VULNERABILITY_IMPORT_REPORT_DIR+USER_VULNERABILITY_IMPORT_REPORT_NAME
+    
+    
+    if not os.path.exists(USER_VULNERABILITY_IMPORT_REPORT_DIR):
+        sys.exit(f'''There is no {USER_VULNERABILITY_IMPORT_REPORT_DIR} directory, please create it and place the vulnerability report named {USER_VULNERABILITY_IMPORT_REPORT_NAME} in the directory.  Terminating program.''')
+        
+    else:
+        try:
+            print(f"Processing report: {vulnerability_report_path}")
+            df = pd.read_excel(vulnerability_report_path, sheet_name=USER_VULNERABILITY_SHEET_NAME, usecols=[USER_VULNERABILITY_COLUMN_NAME])
+            #! df.dropna() will drop the NaN from the specified column
+            df = df.dropna(subset=cols[0])
+            np_cve = pd.DataFrame(df[USER_VULNERABILITY_COLUMN_NAME].unique())
+        except Exception as e:
+            sys.exit("There was an error:", e)
+        else:
+            for cve_collection in np_cve[0]:
+                matches = re.search(r"CVE-\d{4}-\d{4,7}", cve_collection)
+                if matches:
+                    cve_list.append(matches.group())
+
+        cve_tuple = tuple(cve_list)
+        print(f"Successfully created DataFrame from {vulnerability_report_path}")
+            
+        return cve_tuple
+            
+
+def extract_CVEs_Tenable(app_config: dict, user_config: dict):
+    """ Extracts CVEs from provided report, returns data as tuple """
+    
+    print("\n***** Beginning processing of user supplied Tenable vulnerability file *****\n")
  
     USER_VULNERABILITY_IMPORT_REPORT_DIR = user_config["USER_VULNERABILITY_IMPORT_REPORT_DIR"]
     USER_VULNERABILITY_IMPORT_REPORT_NAME = user_config["USER_VULNERABILITY_IMPORT_REPORT_NAME"]
@@ -365,7 +417,7 @@ def extract_CVEs(app_config: dict, user_config: dict):
     else:
         try:
             print(f"Processing report: {vulnerability_report_path}")
-            df = pd.read_excel(vulnerability_report_path, sheet_name=USER_VULNERABILITY_SHEET_NAME, usecols=[USER_VULNERABILITY_COLUMN_NAME])
+            df = pd.read_excel(vulnerability_report_path, sheet_name=USER_VULNERABILITY_SHEET_NAME, usecols=cols)
             #! df.dropna() will drop the NaN from the specified column
             df = df.dropna(subset=cols[0])
             np_cve = pd.DataFrame(df[USER_VULNERABILITY_COLUMN_NAME].unique())
@@ -397,7 +449,7 @@ def calculate_NVD_run_time(unique_cves: tuple):
     elif 'NVD_API_KEY' in os.environ:
         print("NVD API key found, rate limit is 100 requests per minute")
         time_to_process = number_of_cves / 60
-        nvd_sleep_timer = .6
+        nvd_sleep_timer = 1
         
     else:
         print("Unknown issue processing your NVD API Key, setting default to no API key")
@@ -418,7 +470,7 @@ def load_CVE_from_NVD(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
     HEADER = {'apiKey': NVD_API_KEY}
     NVD_URL = app_config["download_URLs"]["NVD_API_BASE_URL"]
     
-    print(f"NVD sleep timer is set to {nvd_sleep_timer}")
+    print(f"NVD sleep timer is set to {nvd_sleep_timer} second(s) to account for API \n")
     
     for cve in unique_cves:
         total_url = NVD_URL+cve      
@@ -449,9 +501,7 @@ def load_CVE_from_NVD(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
                 cve_list.append([cve, "Invalid", "None", "None", "None", "None"])
             else:            
                 vulnStatus = response_json["vulnerabilities"][0]['cve']['vulnStatus']
-                descriptions_value = response_json["vulnerabilities"][0]['cve']['descriptions'][0]['value']
                 if vulnStatus == "Rejected":
-                    # print(f'{cve} was {vulnStatus} by NVD with a description of: {descriptions_value}')
                     cve_list.append([cve, vulnStatus, "None", "None", "None", "None"])
                     
                 elif vulnStatus != "Rejected":
@@ -461,14 +511,12 @@ def load_CVE_from_NVD(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
                         baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['baseSeverity']
                         attackVector = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['attackVector']
                         attackComplexity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['attackComplexity']
-                        # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
                         cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity])
                     elif "cvssMetricV30" in cve_keys:
                         baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['baseScore']
                         baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['baseSeverity']
                         attackVector = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['attackVector']
                         attackComplexity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['attackComplexity']
-                        # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
                         cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity])
                     elif "cvssMetricV2" in cve_keys:
                         cvssData_keys = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData'].keys()
@@ -477,13 +525,11 @@ def load_CVE_from_NVD(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
                             baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseSeverity']
                             accessVector = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['accessVector']
                             accessComplexity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['accessComplexity']
-                            # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !{baseSeverity}!')
                             cve_list.append([cve, vulnStatus, baseScore, baseSeverity, accessVector, accessComplexity])
                         elif "baseSeverity" not in cvssData_keys:
                             baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseScore']
                             accessVector = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['accessVector']
                             accessComplexity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['accessComplexity']
-                            # print(f'{cve:} has a base score of [{baseScore}] and a base severity of !None!')
                             cve_list.append([cve, vulnStatus, baseScore, "None", accessVector, accessComplexity])
                     else:
                         print('Unknown CVSS standard')
@@ -575,4 +621,6 @@ if __name__ == "__main__":
     report_file_path = write_to_csv(cve_report=cve_report, user_config=user_config)
 
     print(f"\nTotal Processing Time: {round((time.time() - start)/60, 2)} minutes")
+
+
 
