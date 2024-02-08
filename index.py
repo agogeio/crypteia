@@ -65,10 +65,10 @@ def download_KEV_file(app_config: dict, user_config: dict):
     elif not os.path.isfile(CISA_KEV_PATH):
         print(f"No existing CISA KEV file found at location: {CISA_KEV_PATH}")
         if user_config["AUTO_DOWNLOAD_ALL"] == "True":
-            print(f"Auto download set to {user_config["AUTO_DOWNLOAD_ALL"]}, CISA KEV will be downloaded")
+            print(f"Auto download set to {user_config['AUTO_DOWNLOAD_ALL']}, CISA KEV will be downloaded")
             CISA_KEV_download = True
         elif user_config["AUTO_DOWNLOAD_ALL"] == "False":
-            print(f"Auto download set to {user_config["AUTO_DOWNLOAD_ALL"]}, CISA KEV will not be downloaded")    
+            print(f"Auto download set to {user_config['AUTO_DOWNLOAD_ALL']}, CISA KEV will not be downloaded")    
         else:
             sys.exit("No CISA KEV File found, error processing user config settings, terminating program")
         
@@ -108,10 +108,10 @@ def download_EPSS_file(app_config: dict, user_config: dict):
     elif not os.path.isfile(EPSS_PATH):
         print(f"No existing EPSS file found at location: {EPSS_PATH}")
         if user_config["AUTO_DOWNLOAD_ALL"] == "True":
-            print(f"Auto download set to {user_config["AUTO_DOWNLOAD_ALL"]}, EPSS will be downloaded")
+            print(f"Auto download set to {user_config['AUTO_DOWNLOAD_ALL']}, EPSS will be downloaded")
             EPSS_download = True
         elif user_config["AUTO_DOWNLOAD_ALL"] == "False":
-            print(f"Auto download set to {user_config["AUTO_DOWNLOAD_ALL"]}, EPSS will not be downloaded")    
+            print(f"Auto download set to {user_config['AUTO_DOWNLOAD_ALL']}, EPSS will not be downloaded")    
         else:
             sys.exit("No EPSS file found, error processing user config settings, terminating program")
         
@@ -157,10 +157,10 @@ def download_EXPLOITDB_file(app_config: dict, user_config: dict):
     elif not os.path.isfile(EXPLOITDB_PATH):
         print(f"No existing ExploitDB file found at location: {EXPLOITDB_PATH}")
         if user_config["AUTO_DOWNLOAD_ALL"] == "True":
-            print(f"Auto download set to {user_config["AUTO_DOWNLOAD_ALL"]}, ExploitDB data will be downloaded")
+            print(f"Auto download set to {user_config['AUTO_DOWNLOAD_ALL']}, ExploitDB data will be downloaded")
             ExploitDB_download = True
         elif user_config["AUTO_DOWNLOAD_ALL"] == "False":
-            print(f"Auto download set to {user_config["AUTO_DOWNLOAD_ALL"]}, ExploitDB data will not be downloaded")    
+            print(f"Auto download set to {user_config['AUTO_DOWNLOAD_ALL']}, ExploitDB data will not be downloaded")    
         else:
             sys.exit("No ExploitDB File found, error processing user config settings, terminating program")
         
