@@ -1,12 +1,9 @@
-known_exploited_vulnerabilities.json
 .dccache
-.vscode/settings.json
 pyvenv.cfg
+/cve_parse/__pycache__/
+/export/**
 *.cfg
 *.env
-*.xlsx
-/import/**
-/export/**
 **/data/**
 **/Scripts/**
 **/Lib/**
@@ -14,5 +11,3 @@ pyvenv.cfg
 **/Notes/**
 **/nvd_data/**
 **/vuldb_data/**
-
-/cve_parse/__pycache__/
