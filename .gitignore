@@ -14,3 +14,5 @@ pyvenv.cfg
 **/Notes/**
 **/nvd_data/**
 **/vuldb_data/**
+
+/cve_parse/__pycache__/
