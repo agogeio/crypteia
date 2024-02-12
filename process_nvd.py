@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import sys
 
+
+
 nvd_master_json_file = ""
 
 
@@ -112,56 +114,3 @@ def process_nvd_files(app_config: dict):
     
     impact_tuple = tuple(impact_list)
     print(f"Impact Tuple: \n{impact_tuple}")
-
-
-def merge_nvd_data(nvd_data_files: list):
-    master_cve_list = []
-
-    
-    for data_file in nvd_data_files:
-        nvd_file_path = nvd_data_dir+data_file
-        try:
-            with open(nvd_file_path, encoding='utf-8') as nvd_file:
-                nvd_data = nvd_file.read()
-                nvd_json = json.loads(nvd_data)
-        except Exception as e:
-            print(f"File processing error: {e}")
-        finally:
-            # print(json.dumps(nvd_json["CVE_Items"], indent=4, sort_keys=True))
-            nvd_cve_items = nvd_json["CVE_Items"]
-            # print(type(nvd_cve_items))
-            for nvd_cve in nvd_cve_items:
-                master_cve_list.append(nvd_cve)
-                # print(json.dumps(nvd_cve["cve"], indent=4, sort_keys=True))
-                
-    print(f"Number of CVE records: {len(master_cve_list)}")
-    print(f"CVE list size in MB: {((sys.getsizeof(master_cve_list)/1024)/1024)}")
-    # print(json.dumps(master_cve_list[0]["cve"], indent=4, sort_keys=True))
-    
-    cve_items_df = pd.DataFrame(master_cve_list)
-    print(f"CVE DataFrame size in MB: {((sys.getsizeof(cve_items_df)/1024)/1024)}")
-    
-    try:
-        nvd_master_file_path = nvd_data_dir+nvd_master_file
-        cve_items_df.to_json(nvd_master_file_path)
-    except Exception as e:
-        print(f"Error writing nvd_master.json: {e}")
-    finally:
-        print(f"File {nvd_master_file} written to the filesystem")
-    
-
-def load_nvd_data(nvd_json_file: str = nvd_master_json_file) -> pd.DataFrame:
-    df_nvd_data = pd.read_json(nvd_json_file)
-    print(f"Loaded {nvd_json_file} with columns {df_nvd_data.columns}")
-    return df_nvd_data
-
-
-if __name__ == "__main__":
-    app_config, _ =cve_config_bootstrap()
-    process_nvd_files(app_config)
-    
-    # merge_nvd_data(["nvdcve-1.1-2002.json"])
-    
-    # merge_nvd_data(nvd_data_files)
-    # df_nvd_data = load_nvd_data()
-    # print(df_nvd_data.count())

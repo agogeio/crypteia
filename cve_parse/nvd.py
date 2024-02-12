@@ -1,3 +1,4 @@
+import flatdict
 import json
 import os
 import pandas as pd
@@ -119,13 +120,43 @@ def load_from_api(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
     return cve_list
 
 
+def load_from_local(app_config: dict): #, unique_cves: tuple
+    """ Reading data from the local NVD data source """
+    
+    NVD_DATA_DIR = app_config["NVD_DATA_DIR"]
+    NVD_FILE = app_config["NVD_FILE"]
+    NVD_PATH = NVD_DATA_DIR+NVD_FILE
+    
+    print("\n***** Loading local NVD database file, this may take several seconds *****\n")
+    
+    try:
+        nvd_file_size = os.path.getsize(NVD_PATH)
+        nvd_file_size = int((nvd_file_size / 1024)/1024)
+        print(f'\n***** NVD file size on disk is: {nvd_file_size} MB *****\n')
+        
+        with open(NVD_PATH, encoding='utf-8') as nvd_file:
+            nvd_data = json.load(nvd_file)
+            nvd_data = flatdict.FlatDict(nvd_data)
+            nvd_data = nvd_data.as_dict()
+            nvd_df = pd.DataFrame(nvd_data['nvd_database'])
+    except Exception as e:
+        print(f'There was an error in the process of loading the NVD data file: {e}')    
+    else:
+        print(nvd_df['baseMetricV2'])
 
-def merge(app_config: dict):
+
+
+def merge_old(app_config: dict):
+    """ Merge the downloaded NVD JSON files into a single JSON document """
+    
+    print("\n***** Beginning the merge process of NVD data, this could take some time *****\n")
+    
     master_cve_list = []
 
     nvd_data_dir = app_config["NVD_DATA_DIR"]
     nvd_data_files = app_config["NVD_DATA_FILES"]
     nvd_master_file = app_config["NVD_FILE"] 
+
     
     
     for data_file in nvd_data_files:
@@ -136,10 +167,11 @@ def merge(app_config: dict):
                 nvd_json = json.loads(nvd_data)
         except Exception as e:
             print(f"File processing error: {e}")
-        finally:
+        else:
             # print(json.dumps(nvd_json["CVE_Items"], indent=4, sort_keys=True))
-            nvd_cve_items = nvd_json["CVE_Items"]
-            # print(type(nvd_cve_items))
+            nvd_cve_items = nvd_json["CVE_Items"][0]['cve']
+            nvd_impact_items = nvd_json["impact"]
+            print(nvd_cve_items)
             for nvd_cve in nvd_cve_items:
                 master_cve_list.append(nvd_cve)
                 # print(json.dumps(nvd_cve["cve"], indent=4, sort_keys=True))
@@ -160,14 +192,53 @@ def merge(app_config: dict):
         print(f"File {nvd_master_file} written to the filesystem")
 
 
+def merge(app_config: dict):
+    """ Merge the downloaded NVD JSON files into a single JSON document """
+    
+    print("\n***** Beginning the merge process of NVD data, this could take some time *****\n")
+
+    nvd_data_dir = app_config["NVD_DATA_DIR"]
+    nvd_data_files = app_config["NVD_DATA_FILES"]
+    nvd_master_file = app_config["NVD_FILE"] 
+    extracted_nvd_data = {} 
+    nvd_database_list = []
+    nvd_database = {}
+    
+    for data_file in nvd_data_files:
+        nvd_file_path = nvd_data_dir+data_file
+        try:
+            with open(nvd_file_path, encoding='utf-8') as nvd_file:
+                nvd_data = nvd_file.read()
+                nvd_json = json.loads(nvd_data)
+        except Exception as e:
+            print(f"File processing error: {e}")
+        else:
+            for nvd_item in nvd_json['CVE_Items']:
+                nvd_cve_items = nvd_item["cve"]["CVE_data_meta"]
+                nvd_impact_items = nvd_item["impact"]
+                extracted_nvd_data = nvd_cve_items | nvd_impact_items
+                nvd_database_list.append(extracted_nvd_data)
+
+    nvd_database["nvd_database"] = nvd_database_list
+
+    try:
+        nvd_master_file_path = nvd_data_dir+nvd_master_file
+        with open(nvd_master_file_path, 'w', encoding='utf-8') as nvd_out:
+            nvd_out.writelines(json.dumps(nvd_database))
+    except Exception as e:
+        print(f"Error writing nvd_master.json: {e}")
+    else:
+        print(f"File {nvd_master_file_path} with {len(nvd_database["nvd_database"])} records written to the filesystem")
+    
+
 if __name__ == "__main__":
     import config
     
     UNIQUE_CVES = ["CVE-2016-2183", "CVE-2023-23375", "CVE-2023-28304",  "CVE-2022-31777", "CVE-2023-4128", "CVE-2015-2808"]
     
     app_config, user_config = config.bootstrap()
-    merge(app_config)
+    # merge(app_config)
+    load_from_local(app_config)
+
     # nvd_data = load_from_api(app_config, UNIQUE_CVES, 1)
     # print(nvd_data)
-    
-    

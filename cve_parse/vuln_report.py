@@ -82,7 +82,7 @@ def tenable(app_config: dict, user_config: dict):
             df = df.dropna(subset=cols[0])
             np_cve = pd.DataFrame(df[USER_VULNERABILITY_COLUMN_NAME].unique())
         except Exception as e:
-            sys.exit("There was an error:", e)
+            sys.exit(f"There was an error: {e}")
         else:
             for cve_collection in np_cve[0]:
                 split_cve = cve_collection.split(',')
