@@ -143,59 +143,7 @@ def load_from_local(app_config: dict): #, unique_cves: tuple
     except Exception as e:
         print(f'There was an error in the process of loading the NVD data file: {e}')    
     else:
-        # print(nvd_df.info())
-        # print(nvd_df.columns)
-        # print(nvd_df['baseMetricV2'].head())
-        # print(nvd_df['baseMetricV2'])
-        
         return nvd_df
-
-
-
-def merge_old(app_config: dict):
-    """ Merge the downloaded NVD JSON files into a single JSON document """
-    
-    print("\n***** Beginning the merge process of NVD data, this could take some time *****\n")
-    
-    master_cve_list = []
-
-    nvd_data_dir = app_config["NVD_DATA_DIR"]
-    nvd_data_files = app_config["NVD_DATA_FILES"]
-    nvd_master_file = app_config["NVD_FILE"] 
-
-    
-    
-    for data_file in nvd_data_files:
-        nvd_file_path = nvd_data_dir+data_file
-        try:
-            with open(nvd_file_path, encoding='utf-8') as nvd_file:
-                nvd_data = nvd_file.read()
-                nvd_json = json.loads(nvd_data)
-        except Exception as e:
-            print(f"File processing error: {e}")
-        else:
-            # print(json.dumps(nvd_json["CVE_Items"], indent=4, sort_keys=True))
-            nvd_cve_items = nvd_json["CVE_Items"][0]['cve']
-            nvd_impact_items = nvd_json["impact"]
-            print(nvd_cve_items)
-            for nvd_cve in nvd_cve_items:
-                master_cve_list.append(nvd_cve)
-                # print(json.dumps(nvd_cve["cve"], indent=4, sort_keys=True))
-                
-    print(f"Number of CVE records: {len(master_cve_list)}")
-    print(f"CVE list size in MB: {((sys.getsizeof(master_cve_list)/1024)/1024)}")
-    # print(json.dumps(master_cve_list[0]["cve"], indent=4, sort_keys=True))
-    
-    cve_items_df = pd.DataFrame(master_cve_list)
-    print(f"CVE DataFrame size in MB: {((sys.getsizeof(cve_items_df)/1024)/1024)}")
-    
-    try:
-        nvd_master_file_path = nvd_data_dir+nvd_master_file
-        cve_items_df.to_json(nvd_master_file_path)
-    except Exception as e:
-        print(f"Error writing nvd_master.json: {e}")
-    finally:
-        print(f"File {nvd_master_file} written to the filesystem")
 
 
 def merge(app_config: dict):
