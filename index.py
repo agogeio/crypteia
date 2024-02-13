@@ -34,6 +34,8 @@ if __name__ == "__main__":
     #* Load data from the NVD API, performance is limited by speed of the API
     nvd_data = nvd.load_from_api(app_config, unique_cves_tuple, nvd_api_sleep_timer)
     
+
+    
     kev_dataframe = kev.create_dataframe(app_config)
     kev_report = kev.build_report(kev_dataframe, nvd_data)
     

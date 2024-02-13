@@ -120,6 +120,7 @@ def load_from_api(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
     return cve_list
 
 
+#! This is where I'm working  
 def load_from_local(app_config: dict): #, unique_cves: tuple
     """ Reading data from the local NVD data source """
     
@@ -142,7 +143,12 @@ def load_from_local(app_config: dict): #, unique_cves: tuple
     except Exception as e:
         print(f'There was an error in the process of loading the NVD data file: {e}')    
     else:
-        print(nvd_df['baseMetricV2'])
+        # print(nvd_df.info())
+        # print(nvd_df.columns)
+        # print(nvd_df['baseMetricV2'].head())
+        # print(nvd_df['baseMetricV2'])
+        
+        return nvd_df
 
 
 
@@ -238,7 +244,7 @@ if __name__ == "__main__":
     
     app_config, user_config = config.bootstrap()
     # merge(app_config)
-    load_from_local(app_config)
+    nvd_df = load_from_local(app_config)
 
     # nvd_data = load_from_api(app_config, UNIQUE_CVES, 1)
     # print(nvd_data)
