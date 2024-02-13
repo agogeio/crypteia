@@ -32,9 +32,10 @@ if __name__ == "__main__":
     nvd_api_sleep_timer = nvd.calculate_run_time(unique_cves_tuple)
     
     #* Load data from the NVD API, performance is limited by speed of the API
-    nvd_data = nvd.load_from_api(app_config, unique_cves_tuple, nvd_api_sleep_timer)
+    nvd_data = nvd.nvd_controller(app_config, user_config ,unique_cves_tuple)
     
-
+    # print(nvd_data)
+    
     
     kev_dataframe = kev.create_dataframe(app_config)
     kev_report = kev.build_report(kev_dataframe, nvd_data)

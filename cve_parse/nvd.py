@@ -6,11 +6,14 @@ import requests
 import sys
 import time
 
+from tabulate import tabulate
+
+
 
 NVD_API_KEY = os.environ.get("NVD_API_KEY")
 
 
-def calculate_run_time(unique_cves: tuple):
+def calculate_run_time(unique_cves: tuple) -> int:
     """Calculate the run time for data processing"""
     
     print("\n***** Calculate the approximate run time for CVE processing *****\n")
@@ -36,7 +39,44 @@ def calculate_run_time(unique_cves: tuple):
     return nvd_sleep_timer
 
 
-def load_from_api(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
+def nvd_controller(app_config: dict, user_config: dict, unique_cves: tuple) -> list:
+    """ Manage flow control if data will be pulled from the API or locally """
+
+    USE_NVD_API = user_config['USE_NVD_API']
+    USE_NVD_LOCAL = user_config['USE_NVD_LOCAL']
+    
+    print("\n***** Entering load controller for NVD data processing *****\n")
+    
+    if USE_NVD_API == 'True' and USE_NVD_LOCAL == 'True':
+        sys.exit('There is an error in your configuration file: USE_NVD_API and USE_NVD_LOCAL are both set to True, only one can be set to True.')
+    
+    elif USE_NVD_API == 'False' and USE_NVD_LOCAL == 'False':
+        sys.exit('There is an error in your configuration file: USE_NVD_API and USE_NVD_LOCAL are both set to False, only one can be set to False.')
+    
+    elif USE_NVD_API == 'True':
+        
+        #? If using the API, call load_from_api function
+        print("\n***** Configuration set for NVD API use, this could take an extensive period of time for a large number of CVEs *****\n")
+        
+        nvd_sleep_timer = calculate_run_time(unique_cves)
+        nvd_data = load_from_api(app_config, unique_cves, nvd_sleep_timer)
+        return nvd_data
+        
+    elif USE_NVD_LOCAL == 'True':
+        print("\n***** Configuration set for NVD API use, this will take several GB memory to load the NVD data into memory *****\n")
+ 
+        #? If using local data store load the data from the file and get the Dataframe
+        nvd_df = load_from_local(app_config)
+        
+        #? Pass the Dataframe and params to extract the needed data
+        nvd_data = process_local(app_config, user_config, unique_cves, nvd_df)
+
+        #? Return the report data back in a common format.
+        # return nvd_data
+        print("Report should be returned now")
+
+
+def load_from_api(app_config: dict, unique_cves: tuple, nvd_sleep_timer: int = 6) -> list:
     """ Extracts data from the National Vulnerability Database """
     
     print("\n***** Using NVD API for CVE processing *****\n")
@@ -46,7 +86,7 @@ def load_from_api(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
     HEADER = {'apiKey': NVD_API_KEY}
     NVD_URL = app_config["download_URLs"]["NVD_API_BASE_URL"]
     
-    print(f"NVD sleep timer is set to {nvd_sleep_timer} second(s) to account for API \n")
+    print(f"NVD sleep timer is set to {nvd_sleep_timer} second(s) to account for API rate limiting \n")
     
     for cve in unique_cves:
         total_url = NVD_URL+cve      
@@ -74,7 +114,7 @@ def load_from_api(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
             print(f"[{counter}] Processing: {total_url}")
             counter += 1
             if response_json["totalResults"] == 0:
-                cve_list.append([cve, "Invalid", "None", "None", "None", "None"])
+                cve_list.append([cve, "Invalid", "None", "None", "None", "None", "None"])
             else:            
                 vulnStatus = response_json["vulnerabilities"][0]['cve']['vulnStatus']
                 if vulnStatus == "Rejected":
@@ -85,28 +125,32 @@ def load_from_api(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
                     if "cvssMetricV31" in cve_keys:
                         baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['baseScore']
                         baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['baseSeverity']
+                        vectorString = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['vectorString']
                         attackVector = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['attackVector']
                         attackComplexity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV31'][0]['cvssData']['attackComplexity']
-                        cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity])
+                        cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
                     elif "cvssMetricV30" in cve_keys:
                         baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['baseScore']
                         baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['baseSeverity']
+                        vectorString = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['vectorString']
                         attackVector = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['attackVector']
                         attackComplexity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV30'][0]['cvssData']['attackComplexity']
-                        cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity])
+                        cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
                     elif "cvssMetricV2" in cve_keys:
                         cvssData_keys = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData'].keys()
                         if "baseSeverity" in cvssData_keys:
                             baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseScore']
                             baseSeverity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseSeverity']
+                            vectorString = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['vectorString']
                             accessVector = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['accessVector']
                             accessComplexity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['accessComplexity']
-                            cve_list.append([cve, vulnStatus, baseScore, baseSeverity, accessVector, accessComplexity])
+                            cve_list.append([cve, vulnStatus, baseScore, baseSeverity, accessVector, accessComplexity, vectorString])
                         elif "baseSeverity" not in cvssData_keys:
                             baseScore = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['baseScore']
+                            vectorString = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['vectorString']
                             accessVector = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['accessVector']
                             accessComplexity = response_json["vulnerabilities"][0]['cve']['metrics']['cvssMetricV2'][0]['cvssData']['accessComplexity']
-                            cve_list.append([cve, vulnStatus, baseScore, "None", accessVector, accessComplexity])
+                            cve_list.append([cve, vulnStatus, baseScore, "None", accessVector, accessComplexity, vectorString])
                     else:
                         print('Unknown CVSS standard')
             time.sleep(nvd_sleep_timer)
@@ -120,8 +164,7 @@ def load_from_api(app_config: dict, unique_cves: tuple, nvd_sleep_timer: 6):
     return cve_list
 
 
-#! This is where I'm working  
-def load_from_local(app_config: dict): #, unique_cves: tuple
+def load_from_local(app_config: dict) -> pd.DataFrame: #, unique_cves: tuple
     """ Reading data from the local NVD data source """
     
     NVD_DATA_DIR = app_config["NVD_DATA_DIR"]
@@ -146,7 +189,7 @@ def load_from_local(app_config: dict): #, unique_cves: tuple
         return nvd_df
 
 
-def merge(app_config: dict):
+def merge(app_config: dict) -> None:
     """ Merge the downloaded NVD JSON files into a single JSON document """
     
     print("\n***** Beginning the merge process of NVD data, this could take some time *****\n")
@@ -168,9 +211,17 @@ def merge(app_config: dict):
             print(f"File processing error: {e}")
         else:
             for nvd_item in nvd_json['CVE_Items']:
-                nvd_cve_items = nvd_item["cve"]["CVE_data_meta"]
+                nvd_cve_items = nvd_item["cve"]["CVE_data_meta"]['ID']
+                nvd_cve_id = {"ID": nvd_cve_items}
+                nvd_cve_description_data = nvd_item["cve"]["description"]["description_data"][0]["value"]
+                
+                if "Rejected" in nvd_cve_description_data:
+                    vulnStatus = {"vulnStatus" : "Rejected"}
+                else:
+                    vulnStatus = {"vulnStatus" : "Processed by NVD"}
+                    
                 nvd_impact_items = nvd_item["impact"]
-                extracted_nvd_data = nvd_cve_items | nvd_impact_items
+                extracted_nvd_data = nvd_cve_id | vulnStatus | nvd_impact_items
                 nvd_database_list.append(extracted_nvd_data)
 
     nvd_database["nvd_database"] = nvd_database_list
@@ -185,14 +236,71 @@ def merge(app_config: dict):
         print(f"File {nvd_master_file_path} with {len(nvd_database["nvd_database"])} records written to the filesystem")
     
 
+def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_df: pd.DataFrame) -> list:
+    """ Takes application & user configs and extracts CVE information from the supplied dataframe """
+
+    cve_list = []
+    
+    print("\n***** Beginning data extraction from the local NVD database *****\n")
+    
+    #! Column Data Needed
+    # columns=['cveID', 'vulnStatus', 'baseScore', 'baseSeverity', 'attackVector', 'accessComplexity', 'vectorString']
+    
+    for cve in unique_cves:
+        
+        print(f"\nProcessing CVE: {cve}")
+        
+        cve_record = nvd_df.loc[nvd_df['ID'] == cve]
+        
+        if len(cve_record) < 1:
+            print(f"Invalid CVE record submitted: {cve}")
+        elif len(cve_record) == 1:
+
+            vulnStatus  = cve_record["vulnStatus"].loc[cve_record.index[0]]
+            #? You need to make sure you're getting the index of the CURRENT record.
+            #? You need to save this index for a query later when you're checking 
+            #? if the record is NaN
+            
+            index = cve_record.index[0]
+            
+            baseMetricV2_present = cve_record["baseMetricV2"].notnull()
+            baseMetricV3_present = cve_record["baseMetricV3"].notnull()
+            #! Prep for CVSS v4, the merge function will need to be updated
+            # baseMetricV4_present = cve_record["baseMetricV4"].notnull()
+            
+            if vulnStatus == "Rejected":
+                print(f'CVE ID {cve}  was: {vulnStatus}')
+            #? Strangely you need the index value for these queries
+            #? Shocked that this isn't the "current index"
+            #! Prep for CVSS v4, the merge function will need to be updated
+            # elif baseMetricV4_present[index] == True:
+            #     print(f'CVE ID: {cve} has CVSS v4 data')
+            elif baseMetricV3_present[index] == True:
+                print(f'CVE ID: {cve} has CVSS v3 data')
+            elif baseMetricV2_present[index] == True:
+                print(f'CVE ID: {cve} has CVSS v2 data')
+            
+            # time.sleep(3)
+        
+        
+        # cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
+        
+    
+    sys.exit("Terminating test run...")
+
+
+
+
+
 if __name__ == "__main__":
     import config
-    
-    UNIQUE_CVES = ["CVE-2016-2183", "CVE-2023-23375", "CVE-2023-28304",  "CVE-2022-31777", "CVE-2023-4128", "CVE-2015-2808"]
-    
     app_config, user_config = config.bootstrap()
-    # merge(app_config)
-    nvd_df = load_from_local(app_config)
+    TEST_CVE_IDs = user_config["TEST_CVE_IDs"]    
+    
+    # TEST_CVE_IDs = ["CVE-2023-40481"]
 
-    # nvd_data = load_from_api(app_config, UNIQUE_CVES, 1)
+    # merge(app_config)
+    nvd_controller(app_config, user_config, TEST_CVE_IDs)
     # print(nvd_data)
+    
+    

@@ -76,11 +76,5 @@
     "EXPLOITDB_EXCLUSION_WORDS":["Dork", "dork"],
 
     "NVD_DATA_DIR": "./data/nvd/",
-    "NVD_FILE": "nvd_database.json",
-
-    "VULNERABILITY_IMPORT_REPORT_DIR": "./import/",
-    "VULNERABILITY_IMPORT_REPORT_NAME": "sample.xlsx",
-
-    "PROCESSED_VULNERABILITY_REPORT_DIR": "./export/",
-    "PROCESSED_VULNERABILITY_REPORT_BASE_NAME": "processed_vulnerability_report.xlsx"
+    "NVD_FILE": "nvd_database.json"
 }

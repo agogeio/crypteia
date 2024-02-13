@@ -164,7 +164,7 @@ def nvd(app_config: dict, user_config: dict):
     if AUTO_UPDATE_NVD_DATA == "True":
         
         print("Auto updated of NVD data set to true, downloading NVD data files.")
-        print("This may take a while depending on your Internet speed")
+        print("This may take a while depending on your Internet speed\n")
                 
         if not os.path.exists(NVD_DATA_DIR):
                 os.makedirs(NVD_DATA_DIR)
