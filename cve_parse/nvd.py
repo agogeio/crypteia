@@ -238,13 +238,9 @@ def merge(app_config: dict) -> None:
 
 def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_df: pd.DataFrame) -> list:
     """ Takes application & user configs and extracts CVE information from the supplied dataframe """
-
-    cve_list = []
-    
     print("\n***** Beginning data extraction from the local NVD database *****\n")
     
-    #! Column Data Needed
-    # columns=['cveID', 'vulnStatus', 'baseScore', 'baseSeverity', 'attackVector', 'accessComplexity', 'vectorString']
+    cve_list = []
     
     for cve in unique_cves:
         
@@ -270,6 +266,7 @@ def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_d
             
             if vulnStatus == "Rejected":
                 print(f'CVE ID {cve}  was: {vulnStatus}')
+                cve_list.append([cve, vulnStatus, 'None', 'None', 'None', 'None', 'None'])
             #? Strangely you need the index value for these queries
             #? Shocked that this isn't the "current index"
             #! Prep for CVSS v4, the merge function will need to be updated
@@ -277,19 +274,32 @@ def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_d
             #     print(f'CVE ID: {cve} has CVSS v4 data')
             elif baseMetricV3_present[index] == True:
                 print(f'CVE ID: {cve} has CVSS v3 data')
+                # cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
+                 
+                baseScore = ""
+                baseSeverity = ""
+                attackVector = ""
+                attackComplexity = ""
+                vectorString = ""
+                
+                cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
+                 
             elif baseMetricV2_present[index] == True:
                 print(f'CVE ID: {cve} has CVSS v2 data')
-            
-            # time.sleep(3)
-        
-        
-        # cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
-        
-    
+                # cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
+                
+                baseScore = ""
+                baseSeverity = ""
+                attackVector = ""
+                attackComplexity = ""
+                vectorString = "" 
+                
+                cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
+
+                
+            time.sleep(3)
+
     sys.exit("Terminating test run...")
-
-
-
 
 
 if __name__ == "__main__":
