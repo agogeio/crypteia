@@ -22,7 +22,8 @@ if __name__ == "__main__":
     download.epss(app_config, user_config)
     download.exploitdb(app_config, user_config)
     download.kev(app_config, user_config)
-    download.nvd(app_config, user_config)
+    nvd.download(app_config, user_config)
+    print(f"\nTotal Download Time: {round((time.time() - start)/60, 2)} minutes")
     
     #* Extract required data from exploit DB
     exploitdb.extract(app_config)
@@ -33,10 +34,7 @@ if __name__ == "__main__":
     
     #* Load data from the NVD API, performance is limited by speed of the API
     nvd_data = nvd.nvd_controller(app_config, user_config ,unique_cves_tuple)
-    
-    # print(nvd_data)
-    
-    
+
     kev_dataframe = kev.create_dataframe(app_config)
     kev_report = kev.build_report(kev_dataframe, nvd_data)
     

@@ -1,14 +1,14 @@
 import flatdict
+import gzip
 import json
 import os
 import pandas as pd
 import requests
+import shutil
 import sys
 import time
 
-from tabulate import tabulate
-
-
+from urllib.request import urlretrieve
 
 NVD_API_KEY = os.environ.get("NVD_API_KEY")
 
@@ -37,6 +37,133 @@ def calculate_run_time(unique_cves: tuple) -> int:
     print(f'{number_of_cves} unique CVEs processed, this process will take roughly {time_to_process} minutes due to NVD API rate limiting')
     
     return nvd_sleep_timer
+
+
+def download(app_config: dict, user_config: dict):
+    """ Downloads the EXPLOITDB XML file """
+    
+    print("\n***** Beginning processing of NVD files *****\n")
+    
+    nvd_file_paths = []
+    nvd_missing_files = []
+    
+    NVD_DATA_DOWNLOAD_URLS = app_config["download_URLs"]["NVD_DATA_DOWNLOAD_URLS"]
+    NVD_DATA_BASE_URL = app_config["download_URLs"]["NVD_DATA_BASE_URL"]
+    NVD_DATA_DIR = app_config["NVD_DATA_DIR"]
+    AUTO_DOWNLOAD_ALL = user_config["AUTO_DOWNLOAD_ALL"]
+    AUTO_UPDATE_NVD_DATA = user_config["AUTO_UPDATE_NVD_DATA"]
+
+    for nvd_url in NVD_DATA_DOWNLOAD_URLS:
+                nvd_file_name = nvd_url.split('/')[7][:-3]
+                nvd_file_path = NVD_DATA_DIR+nvd_file_name
+                nvd_file_paths.append(nvd_file_path)
+    
+
+    if AUTO_UPDATE_NVD_DATA == "True":
+        
+        print("Auto updated of NVD data set to true, downloading NVD data files.")
+        print("This may take a while depending on your Internet speed\n")
+                
+        if not os.path.exists(NVD_DATA_DIR):
+                os.makedirs(NVD_DATA_DIR)
+                print(f"Creating directory {NVD_DATA_DIR}")
+        
+        for nvd_url in NVD_DATA_DOWNLOAD_URLS:
+            nvd_file_name = nvd_url.split('/')[7][:-3]
+            nvd_file_path = NVD_DATA_DIR+nvd_file_name
+            nvd_gz_file_path = NVD_DATA_DIR+nvd_file_name+".gz"
+
+            try:
+                print(f"Downloading: {nvd_url}")
+                urlretrieve(url=nvd_url, filename=nvd_gz_file_path)
+                
+                with gzip.open(nvd_gz_file_path, 'rb') as nvd_file_path_gz:
+                    with open(nvd_file_path, 'wb') as nvd_file_dir:
+                        shutil.copyfileobj(nvd_file_path_gz, nvd_file_dir)
+                    
+                os.remove(nvd_gz_file_path)
+            except Exception as e:
+                print(f"Error downloading NVD files: {e}")
+            finally:
+                pass
+        
+        merge(app_config)
+                
+    
+    elif AUTO_DOWNLOAD_ALL == "True":
+        
+        if not os.path.exists(NVD_DATA_DIR):
+                os.makedirs(NVD_DATA_DIR)
+                print(f"Creating directory {NVD_DATA_DIR}")
+        
+        for nvd_file_path in nvd_file_paths:
+            if os.path.exists(nvd_file_path):
+                pass
+                # print(f"Found: {nvd_file_path}")
+            elif not os.path.exists(nvd_file_path):
+                print(f"Not Found: {nvd_file_path}")
+                nvd_missing_files.append(nvd_file_path)
+        
+        if len(nvd_missing_files) > 0:
+            
+            print(f"{len(nvd_missing_files)} NVD data files missing, starting download")
+            
+            for missing_file in nvd_missing_files:
+                nvd_file_name = missing_file.split('/')[3]
+                nvd_file_path = NVD_DATA_DIR+nvd_file_name
+                nvd_gz_file_path = NVD_DATA_DIR+nvd_file_name+".gz"
+                nvd_url = NVD_DATA_BASE_URL+nvd_file_name+".gz"
+                
+                try:
+                    print(f"Downloading: {nvd_url}")
+                    urlretrieve(url=nvd_url, filename=nvd_gz_file_path)
+                    
+                    with gzip.open(nvd_gz_file_path, 'rb') as nvd_file_path_gz:
+                        with open(nvd_file_path, 'wb') as nvd_file_dir:
+                            shutil.copyfileobj(nvd_file_path_gz, nvd_file_dir)
+                        
+                    os.remove(nvd_gz_file_path)
+                except Exception as e:
+                    print(f"Error downloading NVD files: {e}")
+                finally:
+                    pass
+                    
+            merge(app_config)
+                    
+        else:
+            print("No NVD files missing, if you would like to download fresh files set ")
+            print('AUTO_UPDATE_NVD_DATA flag in the user_config.json file to "True"')
+                
+            
+    
+    elif AUTO_UPDATE_NVD_DATA == "False":
+        print("Auto Update NVD = False, Auto Download All = True")
+
+
+def extract_cvss_data(nvd_data: pd.DataFrame) -> dict:
+    """ Extract needed CVE data from the NVD dataset """
+    # print("\n***** Extract needed CVE data from the NVD dataset *****\n")
+    
+    keys = nvd_data.keys()
+    cvss_data = {}
+    
+    if "cvssV2" in keys:
+        cvss_data["version"] = nvd_data["cvssV2"]["version"]
+        cvss_data["baseScore"] = nvd_data["cvssV2"]["baseScore"]
+        cvss_data["baseSeverity"] = nvd_data["severity"]
+        cvss_data["attackVector"] = nvd_data["cvssV2"]["accessVector"]
+        cvss_data["attackComplexity"] = nvd_data["cvssV2"]["accessComplexity"]
+        cvss_data["vectorString"] = nvd_data["cvssV2"]["vectorString"]
+        
+    elif "cvssV3" in keys:
+        cvss_data["version"] = nvd_data["cvssV3"]["version"]
+        cvss_data["baseScore"] = nvd_data["cvssV3"]["baseScore"]
+        cvss_data["baseSeverity"] = nvd_data["cvssV3"]["baseSeverity"]
+        cvss_data["attackVector"] = nvd_data["cvssV3"]["attackVector"]
+        cvss_data["attackComplexity"] = nvd_data["cvssV3"]["attackComplexity"]
+        cvss_data["vectorString"] = nvd_data["cvssV3"]["vectorString"]
+
+    return cvss_data
 
 
 def nvd_controller(app_config: dict, user_config: dict, unique_cves: tuple) -> list:
@@ -72,8 +199,8 @@ def nvd_controller(app_config: dict, user_config: dict, unique_cves: tuple) -> l
         nvd_data = process_local(app_config, user_config, unique_cves, nvd_df)
 
         #? Return the report data back in a common format.
-        # return nvd_data
-        print("Report should be returned now")
+        print("Returning local NVD data report")
+        return nvd_data
 
 
 def load_from_api(app_config: dict, unique_cves: tuple, nvd_sleep_timer: int = 6) -> list:
@@ -234,7 +361,7 @@ def merge(app_config: dict) -> None:
         print(f"Error writing nvd_master.json: {e}")
     else:
         print(f"File {nvd_master_file_path} with {len(nvd_database["nvd_database"])} records written to the filesystem")
-    
+
 
 def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_df: pd.DataFrame) -> list:
     """ Takes application & user configs and extracts CVE information from the supplied dataframe """
@@ -244,8 +371,7 @@ def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_d
     
     for cve in unique_cves:
         
-        print(f"\nProcessing CVE: {cve}")
-        
+        # print(f"\nProcessing CVE: {cve}")
         cve_record = nvd_df.loc[nvd_df['ID'] == cve]
         
         if len(cve_record) < 1:
@@ -272,45 +398,50 @@ def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_d
             #! Prep for CVSS v4, the merge function will need to be updated
             # elif baseMetricV4_present[index] == True:
             #     print(f'CVE ID: {cve} has CVSS v4 data')
+            #     cvss_data = cve_record["baseMetricV4"].apply(extract_cvss_data)
             elif baseMetricV3_present[index] == True:
-                print(f'CVE ID: {cve} has CVSS v3 data')
+                # print(f'CVE ID: {cve} has CVSS v3 data')
                 # cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
-                 
-                baseScore = ""
-                baseSeverity = ""
-                attackVector = ""
-                attackComplexity = ""
-                vectorString = ""
+                
+                cvss_data = cve_record["baseMetricV3"].apply(extract_cvss_data)
+                cvss_data = cvss_data.to_dict()
+                cvss_data = cvss_data[index]
+
+                # cvss_version = cvss_data["version"]
+                baseScore = cvss_data["baseScore"]
+                baseSeverity = cvss_data["baseSeverity"]
+                attackVector = cvss_data["attackVector"]
+                attackComplexity = cvss_data["attackComplexity"]
+                vectorString = cvss_data["vectorString"]
                 
                 cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
                  
             elif baseMetricV2_present[index] == True:
-                print(f'CVE ID: {cve} has CVSS v2 data')
+                # print(f'CVE ID: {cve} has CVSS v2 data')
                 # cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
                 
-                baseScore = ""
-                baseSeverity = ""
-                attackVector = ""
-                attackComplexity = ""
-                vectorString = "" 
+                cvss_data = cve_record["baseMetricV2"].apply(extract_cvss_data)
+                cvss_data = cvss_data.to_dict()
+                cvss_data = cvss_data[index]
+                
+                # cvss_version = cvss_data["version"]
+                baseScore = cvss_data["baseScore"]
+                baseSeverity = cvss_data["baseSeverity"]
+                attackVector = cvss_data["attackVector"]
+                attackComplexity = cvss_data["attackComplexity"]
+                vectorString = cvss_data["vectorString"]
                 
                 cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
 
-                
-            time.sleep(3)
-
-    sys.exit("Terminating test run...")
+    return cve_list
 
 
 if __name__ == "__main__":
     import config
     app_config, user_config = config.bootstrap()
     TEST_CVE_IDs = user_config["TEST_CVE_IDs"]    
-    
-    # TEST_CVE_IDs = ["CVE-2023-40481"]
-
     # merge(app_config)
-    nvd_controller(app_config, user_config, TEST_CVE_IDs)
-    # print(nvd_data)
+    nvd_data = nvd_controller(app_config, user_config, TEST_CVE_IDs)
+    print(nvd_data)
     
     
