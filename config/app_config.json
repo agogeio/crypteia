@@ -76,5 +76,8 @@
     "EXPLOITDB_EXCLUSION_WORDS":["Dork", "dork"],
 
     "NVD_DATA_DIR": "./data/nvd/",
-    "NVD_FILE": "nvd_database.json"
+    "NVD_FILE": "nvd_database.json",
+
+    "NOMI_DATA_DIR": "./data/nvd/",
+    "NOMI_DATA_FILE": "nomi.xlsx"
 }

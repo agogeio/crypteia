@@ -1,4 +1,4 @@
-__all__ = ["config", "download", "exploitdb", "vuln_report", "nvd", "kev", "write_report"]
+__all__ = ["config", "epss", "kev", "exploitdb", "vuln_report", "nvd", "write_report"]
 
 #! Future modules to implement
-# , "epss", "inventory", "vector"
+# "inventory", "vector"

@@ -3,7 +3,7 @@ import pandas as pd
 import time
 
 from cve_parse import config
-from cve_parse import download
+from cve_parse import epss
 from cve_parse import exploitdb
 from cve_parse import kev
 from cve_parse import nvd
@@ -15,13 +15,12 @@ NVD_API_KEY = os.environ.get("NVD_API_KEY")
 
 if __name__ == "__main__":
     start = time.time()
-    
     app_config, user_config = config.bootstrap()
     
     #* Download required files for operations
-    download.epss(app_config, user_config)
-    download.exploitdb(app_config, user_config)
-    download.kev(app_config, user_config)
+    epss.download(app_config, user_config)
+    exploitdb.download(app_config, user_config)
+    kev.download(app_config, user_config)
     nvd.download(app_config, user_config)
     print(f"\nTotal Download Time: {round((time.time() - start)/60, 2)} minutes")
     

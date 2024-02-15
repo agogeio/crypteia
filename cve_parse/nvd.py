@@ -51,7 +51,7 @@ def download(app_config: dict, user_config: dict):
     NVD_DATA_BASE_URL = app_config["download_URLs"]["NVD_DATA_BASE_URL"]
     NVD_DATA_DIR = app_config["NVD_DATA_DIR"]
     AUTO_DOWNLOAD_ALL = user_config["AUTO_DOWNLOAD_ALL"]
-    AUTO_UPDATE_NVD_DATA = user_config["AUTO_UPDATE_NVD_DATA"]
+    NVD_DATA_AUTO_UPDATE = user_config["NVD_DATA_AUTO_UPDATE"]
 
     for nvd_url in NVD_DATA_DOWNLOAD_URLS:
                 nvd_file_name = nvd_url.split('/')[7][:-3]
@@ -59,7 +59,7 @@ def download(app_config: dict, user_config: dict):
                 nvd_file_paths.append(nvd_file_path)
     
 
-    if AUTO_UPDATE_NVD_DATA == "True":
+    if NVD_DATA_AUTO_UPDATE == "True":
         
         print("Auto updated of NVD data set to true, downloading NVD data files.")
         print("This may take a while depending on your Internet speed\n")
@@ -132,11 +132,11 @@ def download(app_config: dict, user_config: dict):
                     
         else:
             print("No NVD files missing, if you would like to download fresh files set ")
-            print('AUTO_UPDATE_NVD_DATA flag in the user_config.json file to "True"')
+            print('NVD_DATA_AUTO_UPDATE flag in the user_config.json file to "True"')
                 
             
     
-    elif AUTO_UPDATE_NVD_DATA == "False":
+    elif NVD_DATA_AUTO_UPDATE == "False":
         print("Auto Update NVD = False, Auto Download All = True")
 
 
