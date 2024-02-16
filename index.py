@@ -25,6 +25,7 @@ if __name__ == "__main__":
     exploitdb.extract(app_config)
     #* Extract unique CVEs from provided vulnerability report
     unique_cves_tuple = vuln_report.extract(app_config, user_config)
+    
     #* Set NVD sleep timer if using the API if an API key is present
     nvd_api_sleep_timer = nvd.calculate_run_time(unique_cves_tuple)
     #* Load data from the NVD API, performance is limited by speed of the API

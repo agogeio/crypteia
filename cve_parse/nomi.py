@@ -11,7 +11,7 @@ from datetime import datetime
 
 GITHUB_API_KEY = os.environ.get("NVD_API_KEY")
 
-def load_from_github(app_config: dict, user_config: dict) -> list:
+def load_from_github(app_config: dict) -> list:
     """ Loads CVE PoC data from the Nomi GitHub repo """
 
     NOMI_GITHUB_OWNER = app_config["NOMI_GITHUB_OWNER"]
@@ -95,14 +95,14 @@ def update_controller(app_config: dict, user_config: dict) -> str:
         if not os.path.exists(NOMI_FILE_PATH):
             if AUTO_DOWNLOAD_ALL == "True":
                 print(f"The file {NOMI_FILE_PATH} was not found and the user_config.json AUTO_DOWNLOAD_ALL is set to True")
-                cve_poc_data = load_from_github(app_config, user_config)
+                cve_poc_data = load_from_github(app_config)
                 #! Need to create the write data to file function which would need the app_config, user_config, and the cve_poc_data
                 write_file(app_config, cve_poc_data)
                 
         elif os.path.exists(NOMI_FILE_PATH):
             if NOMI_DATA_AUTO_UPDATE == "True":
 
-                print(f"The Nome CVE PoC file was found, but the user_config.json file flag NOMI_DATA_AUTO_UPDATE is set to True")
+                print(f"The file at location {NOMI_FILE_PATH} was found, but the user_config.json file flag NOMI_DATA_AUTO_UPDATE is set to True")
                 file_path = Path(NOMI_FILE_PATH)
                 creation_time = file_path.stat().st_ctime
                 creation_date = datetime.fromtimestamp(creation_time)
@@ -114,9 +114,9 @@ def update_controller(app_config: dict, user_config: dict) -> str:
                 current_date = current_date.strftime('%B, %d, %Y')
                 
                 if creation_date == current_date:
-                    print(f"Last download time was {creation_date}, files are only updated daily, data will not be updated until tomorrow")
+                    print(f"Last download time was {creation_date}, files are only updated daily, data will update tomorrow")
                 else:
-                    cve_poc_data = load_from_github(app_config, user_config)
+                    cve_poc_data = load_from_github(app_config)
                     write_file(app_config, cve_poc_data)
 
 
@@ -137,6 +137,7 @@ def write_file(app_config: dict, nomi_data: list):
         print(f"There was an issue writing the file {NOMI_FILE_PATH}, the error was: {e}")
     else:
         print(f"The file {NOMI_FILE_PATH} was written to the file system.")
+
 
 
 if __name__ == "__main__":

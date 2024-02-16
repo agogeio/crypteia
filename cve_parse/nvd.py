@@ -135,8 +135,6 @@ def download(app_config: dict, user_config: dict):
         else:
             print("No NVD files missing, if you would like to download fresh files set ")
             print('NVD_DATA_AUTO_UPDATE flag in the user_config.json file to "True"')
-                
-            
     
     elif NVD_DATA_AUTO_UPDATE == "False":
         print("Auto Update NVD = False, Auto Download All = True")
