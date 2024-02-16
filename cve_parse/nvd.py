@@ -39,6 +39,8 @@ def calculate_run_time(unique_cves: tuple) -> int:
     return nvd_sleep_timer
 
 
+
+#! Need to pull the update logic out of this function and create an update controller that calls the download function
 def download(app_config: dict, user_config: dict):
     """ Downloads the EXPLOITDB XML file """
     

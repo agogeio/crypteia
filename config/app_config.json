@@ -78,6 +78,8 @@
     "NVD_DATA_DIR": "./data/nvd/",
     "NVD_FILE": "nvd_database.json",
 
-    "NOMI_DATA_DIR": "./data/nvd/",
-    "NOMI_DATA_FILE": "nomi.xlsx"
+    "NOMI_DATA_DIR": "./data/nomi/",
+    "NOMI_DATA_FILE": "nomi.xlsx",
+    "NOMI_GITHUB_OWNER": "nomi-sec",
+    "NOMI_GITHUB_REPO": "PoC-in-GitHub"
 }

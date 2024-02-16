@@ -4,8 +4,8 @@
     "EPSS_DATA_AUTO_UPDATE": "True",
     "EXPLOITDB_DATA_AUTO_UPDATE": "True",
     "KEV_DATA_AUTO_UPDATE": "True",
-    "NOMI_DATA_AUTO_UPDATE": "False",
-    "NVD_DATA_AUTO_UPDATE": "True",
+    "NOMI_DATA_AUTO_UPDATE": "True",
+    "NVD_DATA_AUTO_UPDATE": "False",
 
     "USE_NVD_API": "False",
     "USE_NVD_LOCAL": "True",
