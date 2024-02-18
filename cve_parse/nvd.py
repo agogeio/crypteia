@@ -8,6 +8,8 @@ import shutil
 import sys
 import time
 
+import utils
+
 from urllib.request import urlretrieve
 
 NVD_API_KEY = os.environ.get("NVD_API_KEY")
@@ -39,10 +41,21 @@ def calculate_run_time(unique_cves: tuple) -> int:
     return nvd_sleep_timer
 
 
+def check_missing_files(nvd_file_paths) -> list:
+    
+    nvd_missing_files = []
+    
+    for nvd_file_path in nvd_file_paths:
+        if not os.path.exists(nvd_file_path):
+            print(f"Not Found: {nvd_file_path}")
+            nvd_missing_files.append(nvd_file_path)
+        
+    return nvd_missing_files 
+
 
 #! Need to pull the update logic out of this function and create an update controller that calls the download function
 def download(app_config: dict, user_config: dict):
-    """ Downloads the EXPLOITDB XML file """
+    """ Download the NVD files """
     
     print("\n***** Beginning processing of NVD files *****\n")
     
@@ -54,6 +67,8 @@ def download(app_config: dict, user_config: dict):
     NVD_DATA_DIR = app_config["NVD_DATA_DIR"]
     AUTO_DOWNLOAD_ALL = user_config["AUTO_DOWNLOAD_ALL"]
     NVD_DATA_AUTO_UPDATE = user_config["NVD_DATA_AUTO_UPDATE"]
+    
+    utils.directory_manager(NVD_DATA_DIR)
 
     for nvd_url in NVD_DATA_DOWNLOAD_URLS:
                 nvd_file_name = nvd_url.split('/')[7][:-3]
@@ -62,54 +77,41 @@ def download(app_config: dict, user_config: dict):
     
 
     if NVD_DATA_AUTO_UPDATE == "True":
-        
+
         print("Auto updated of NVD data set to true, downloading NVD data files.")
         print("This may take a while depending on your Internet speed\n")
-                
-        if not os.path.exists(NVD_DATA_DIR):
-                os.makedirs(NVD_DATA_DIR)
-                print(f"Creating directory {NVD_DATA_DIR}")
-        
+
         for nvd_url in NVD_DATA_DOWNLOAD_URLS:
             nvd_file_name = nvd_url.split('/')[7][:-3]
             nvd_file_path = NVD_DATA_DIR+nvd_file_name
             nvd_gz_file_path = NVD_DATA_DIR+nvd_file_name+".gz"
 
             try:
-                print(f"Downloading: {nvd_url}")
-                urlretrieve(url=nvd_url, filename=nvd_gz_file_path)
                 
-                with gzip.open(nvd_gz_file_path, 'rb') as nvd_file_path_gz:
-                    with open(nvd_file_path, 'wb') as nvd_file_dir:
-                        shutil.copyfileobj(nvd_file_path_gz, nvd_file_dir)
-                    
-                os.remove(nvd_gz_file_path)
+                response = utils.file_download(nvd_url, nvd_gz_file_path)
             except Exception as e:
                 print(f"Error downloading NVD files: {e}")
-            finally:
-                pass
-        
-        merge(app_config)
+            else:
+                response = un_gz(nvd_gz_file_path, nvd_file_path)
                 
-    
+                if "error" not in response.keys():
+                    print(f"Response: {response["message"]}")
+                elif "error" in response.keys():
+                    print(f"Error: {response["error"]}")
+                else:
+                    print(f"un_gz() Unknown status")
+
+        merge(app_config)
+
+
     elif AUTO_DOWNLOAD_ALL == "True":
         
-        if not os.path.exists(NVD_DATA_DIR):
-                os.makedirs(NVD_DATA_DIR)
-                print(f"Creating directory {NVD_DATA_DIR}")
-        
-        for nvd_file_path in nvd_file_paths:
-            if os.path.exists(nvd_file_path):
-                pass
-                # print(f"Found: {nvd_file_path}")
-            elif not os.path.exists(nvd_file_path):
-                print(f"Not Found: {nvd_file_path}")
-                nvd_missing_files.append(nvd_file_path)
+        nvd_missing_files = check_missing_files(nvd_file_paths)
         
         if len(nvd_missing_files) > 0:
-            
+
             print(f"{len(nvd_missing_files)} NVD data files missing, starting download")
-            
+
             for missing_file in nvd_missing_files:
                 nvd_file_name = missing_file.split('/')[3]
                 nvd_file_path = NVD_DATA_DIR+nvd_file_name
@@ -117,27 +119,36 @@ def download(app_config: dict, user_config: dict):
                 nvd_url = NVD_DATA_BASE_URL+nvd_file_name+".gz"
                 
                 try:
-                    print(f"Downloading: {nvd_url}")
-                    urlretrieve(url=nvd_url, filename=nvd_gz_file_path)
+                    response = utils.file_download(nvd_url, nvd_gz_file_path)
                     
-                    with gzip.open(nvd_gz_file_path, 'rb') as nvd_file_path_gz:
-                        with open(nvd_file_path, 'wb') as nvd_file_dir:
-                            shutil.copyfileobj(nvd_file_path_gz, nvd_file_dir)
-                        
-                    os.remove(nvd_gz_file_path)
+                    if "error" not in response.keys():
+                        print(f"Directory: response {response["message"]}")
+                    elif "error" in response.keys():
+                        print(f"Directory: error {response["error"]}")
+                    else:
+                        print(f"Unknown status")
+                    
                 except Exception as e:
                     print(f"Error downloading NVD files: {e}")
-                finally:
-                    pass
+                else:
+                    response = un_gz(nvd_gz_file_path, nvd_file_path)
+                    
+                    if "error" not in response.keys():
+                        print(f"Response: {response["message"]}")
+                    elif "error" in response.keys():
+                        print(f"Error: {response["error"]}")
+                    else:
+                        print(f"Unknown status")
                     
             merge(app_config)
                     
         else:
             print("No NVD files missing, if you would like to download fresh files set ")
             print('NVD_DATA_AUTO_UPDATE flag in the user_config.json file to "True"')
-    
+
     elif NVD_DATA_AUTO_UPDATE == "False":
         print("Auto Update NVD = False, Auto Download All = True")
+
 
 
 def extract_cvss_data(nvd_data: pd.DataFrame) -> dict:
@@ -436,12 +447,31 @@ def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_d
     return cve_list
 
 
+def un_gz(gz_file_path, file_path) -> dict:
+    """ Un-gz NVD Files """
+    try:
+        with gzip.open(gz_file_path, 'rb') as nvd_file_path_gz:
+            with open(file_path, 'wb') as nvd_file_dir:
+                shutil.copyfileobj(nvd_file_path_gz, nvd_file_dir)
+    except Exception as e:
+        response = {
+                "message":f"{file_path} could not be extracted from {gz_file_path}",
+                "error": f"{e}"
+            }
+        return response
+    else:
+        os.remove(gz_file_path)
+        response = {
+                "message":f"{file_path} extracted from {gz_file_path}"
+            }
+        return response
+
 if __name__ == "__main__":
     import config
     app_config, user_config = config.bootstrap()
     TEST_CVE_IDs = user_config["TEST_CVE_IDs"]    
-    # merge(app_config)
+    download(app_config, user_config)
     nvd_data = nvd_controller(app_config, user_config, TEST_CVE_IDs)
-    print(nvd_data)
+    # print(nvd_data)
     
     

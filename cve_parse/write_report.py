@@ -2,6 +2,8 @@ from datetime import datetime
 import pandas as pd
 import sys
 
+columns=['cveID', 'vulnStatus', 'baseScore', 'baseSeverity', 'attackVector', 'accessComplexity', 'vectorString', 'isKEV', 'knownRansomwareCampaignUse']
+
 def csv(user_config: dict, cve_report: list):
     
     print("\n***** Generating CSV report and writing to disk *****\n")
@@ -11,7 +13,7 @@ def csv(user_config: dict, cve_report: list):
     file_path = user_config["USER_PROCESSED_VULNERABILITY_REPORT_DIR"]+date_time+"-"+user_config["USER_PROCESSED_VULNERABILITY_REPORT_BASE_NAME"]+".csv"
     
     try:
-        cve_df = pd.DataFrame(cve_report, columns=['cveID', 'vulnStatus', 'baseScore', 'baseSeverity', 'attackVector', 'accessComplexity', 'vectorString', 'isKEV', 'knownRansomwareCampaignUse'])
+        cve_df = pd.DataFrame(cve_report, columns=columns)
         cve_df.to_csv(file_path)
     except Exception as e:
         sys.exit(f"Error in write report processing CSV file: {e}")
@@ -30,7 +32,7 @@ def excel(user_config: dict, cve_report: list):
     file_path = user_config["USER_PROCESSED_VULNERABILITY_REPORT_DIR"]+date_time+"-"+user_config["USER_PROCESSED_VULNERABILITY_REPORT_BASE_NAME"]+".xlsx"
     
     try:
-        cve_df = pd.DataFrame(cve_report, columns=['cveID', 'vulnStatus', 'baseScore', 'baseSeverity', 'attackVector', 'accessComplexity', 'vectorString','isKEV', 'knownRansomwareCampaignUse'])
+        cve_df = pd.DataFrame(cve_report, columns=columns)
         cve_df.to_excel(file_path)
     except Exception as e:
         sys.exit(f"Error in write report processing Excel file: {e}")

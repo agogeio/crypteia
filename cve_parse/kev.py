@@ -7,11 +7,11 @@ import pandas as pd
 from urllib.request import urlretrieve
 
 
-def build_report(KEV_df: pd.DataFrame, cve_data: list):  
+def build_report(KEV_df: pd.DataFrame, cve_data: list) -> list:  
     
     print("\n***** Enhancing report data with CISA KEV data *****\n")
     
-    cves = cve_data      
+    cves = cve_data
     for cve in cves:
         result = KEV_df.loc[KEV_df["cveID"] == cve[0]]
         if len(result.values) == 0:
@@ -32,17 +32,19 @@ def create_dataframe(app_config: dict):
     
     print("\n***** Using local CISA KEV file to load into DataFrame *****\n")
     
-    KEV_filename = app_config["CISA_KEV_DIR"]+app_config["CISA_KEV_FILE"]
+    CISA_KEV_DIR = app_config["CISA_KEV_DIR"]
+    CISA_KEV_FILE = app_config["CISA_KEV_FILE"]
+    CISA_KEV_PATH = CISA_KEV_DIR+CISA_KEV_FILE
     
     try:
-        with open(KEV_filename) as KEV_file:
+        with open(CISA_KEV_PATH) as KEV_file:
             KEV_data = KEV_file.read()
     except Exception as e:
         sys.exit(f'Error loading KEV File: {e}')
     else:
         KEV_json = json.loads(KEV_data)
         KEV_df =  pd.DataFrame.from_dict(KEV_json["vulnerabilities"])
-        print(f"Loaded the following file into DataFrame with success: {KEV_filename}")
+        print(f"Loaded the following file into DataFrame with success: {CISA_KEV_PATH}")
         
     return KEV_df
 
@@ -53,18 +55,18 @@ def download(app_config: dict, user_config: dict):
     print("\n***** Beginning processing of CISA KEV files *****\n")
     
     CISA_KEV_DOWNLOAD_URL = app_config["download_URLs"]["CISA_KEV_DOWNLOAD_URL"]
-    CISA_KEV_DIR=app_config["CISA_KEV_DIR"]
-    CISA_KEV_FILE=app_config["CISA_KEV_FILE"]
-    CISA_KEV_PATH=CISA_KEV_DIR+CISA_KEV_FILE
+    CISA_KEV_DIR = app_config["CISA_KEV_DIR"]
+    CISA_KEV_FILE = app_config["CISA_KEV_FILE"]
+    CISA_KEV_PATH = CISA_KEV_DIR+CISA_KEV_FILE
     
     CISA_KEV_download = False
     
     if os.path.isfile(CISA_KEV_PATH):
         print(f"Existing CISA KEV file located at: {CISA_KEV_PATH}")
-        if user_config["KEV_DATA_AUTO_UPDATE"] == "True":
+        if user_config["CISA_KEV_DATA_AUTO_UPDATE"] == "True":
             print("CISA KEV is configured for auto update, downloading CISA KEV update")
             CISA_KEV_download = True
-        elif user_config["KEV_DATA_AUTO_UPDATE"] == "False":
+        elif user_config["CISA_KEV_DATA_AUTO_UPDATE"] == "False":
             print("CISA KEV is not configured for auto update, no CISA KEV update will be downloaded.")
             print("Warning, you may be using an outdated version of the CISA KEV list")
     elif not os.path.isfile(CISA_KEV_PATH):

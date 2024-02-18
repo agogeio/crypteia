@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import requests
 import sys
@@ -64,6 +65,28 @@ def load_from_github(app_config: dict) -> list:
     
     return cve_poc_data
 
+
+def create_dataframe(app_config: dict) -> pd.DataFrame:
+    """ Returns the Nomi dataset as a pd.Dataframe """
+    
+    print("\n***** Using local Nomi file to load into DataFrame *****\n")
+    
+    NOMI_DATA_DIR = app_config["NOMI_DATA_DIR"]
+    NOMI_DATA_FILE = app_config["NOMI_DATA_FILE"]
+    NOMI_FILE_PATH = NOMI_DATA_DIR+NOMI_DATA_FILE
+    
+    try:
+        nomi_df = pd.read_excel(NOMI_FILE_PATH, usecols=["cve", "url"])
+    except Exception as e:
+        sys.exit(f'Error loading {NOMI_FILE_PATH} file with error: {e}')
+    else:
+        print(f"Loaded the following file into DataFrame with success: {NOMI_FILE_PATH}")
+        
+    return nomi_df
+
+
+def lookup(nomi_df: pd.DataFrame, cves: list) -> dict:
+    pass
 
 def update_controller(app_config: dict, user_config: dict) -> str:
     """  The update controller processes app and user settings, and will make sure data files are updated once per day """
@@ -140,7 +163,21 @@ def write_file(app_config: dict, nomi_data: list):
 
 
 
+
 if __name__ == "__main__":
     import config
+    
+    nvd_data = [['CVE-2016-2183', 'Modified', 7.5, 'HIGH', 'NETWORK', 'LOW'], 
+            ['CVE-2023-23375', 'Analyzed', 7.8, 'HIGH', 'LOCAL', 'LOW'], 
+            ['CVE-2023-28304', 'Analyzed', 7.8, 'HIGH', 'LOCAL', 'LOW'], 
+            ['CVE-2022-31777', 'Analyzed', 5.4, 'MEDIUM', 'NETWORK', 'LOW'], 
+            ['CVE-2023-4128', 'Rejected', 'None', 'None', 'None', 'None'], 
+            ['CVE-2015-2808', 'Modified', 5.0, 'None', 'NETWORK', 'LOW']]
+    
     app_config, user_config = config.bootstrap()
     update_controller(app_config, user_config)
+    nomi_df = create_dataframe(app_config)
+    
+    lookup(nomi_df, )
+    
+    print(nomi_df)
