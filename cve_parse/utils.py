@@ -11,8 +11,6 @@ from urllib.request import urlretrieve
 
 DEBUG = os.environ.get("DEBUG")
 
-# print(f"DEBUG is: {DEBUG}")
-
 ACTIONS = {
     "download": "download",
     "none": "none",

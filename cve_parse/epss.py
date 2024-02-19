@@ -1,8 +1,6 @@
 import sys
 
-
 from cve_parse import utils
-from urllib.request import urlretrieve
 
 THREAT_INTEL_TYPE = 'EPSS'
 

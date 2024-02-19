@@ -1,13 +1,6 @@
 import time
 
-from cve_parse import config
-from cve_parse import epss
-from cve_parse import exploitdb
-from cve_parse import kev
-from cve_parse import nomi
-from cve_parse import nvd
-from cve_parse import vuln_report
-from cve_parse import write_report
+from cve_parse import *
 
 if __name__ == "__main__":
     start = time.time()
@@ -17,7 +10,6 @@ if __name__ == "__main__":
     kev.download(app_config, user_config)
     epss.download(app_config, user_config)
     exploitdb.download(app_config, user_config)
-
     nomi.download(app_config, user_config)
     
     #! I need to update the NVD dataset to use utils

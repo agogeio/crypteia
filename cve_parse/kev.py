@@ -5,7 +5,6 @@ import pandas as pd
 
 from cve_parse import utils
 
-
 THREAT_INTEL_TYPE = 'CISA_KEV'
 
 def build_report(KEV_df: pd.DataFrame, cve_data: list) -> list:  

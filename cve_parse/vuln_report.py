@@ -3,7 +3,6 @@ import pandas as pd
 import re
 import sys
 
-
 def extract(app_config: dict, user_config: dict):
     vendor = user_config["USER_VULNERABILITY_SCAN_VENDOR"]
     
@@ -13,8 +12,8 @@ def extract(app_config: dict, user_config: dict):
     if vendor == "R":
         unique_cves = rapid7(app_config, user_config)
         return unique_cves
- 
- 
+
+
 def rapid7(app_config: dict, user_config: dict):
     """ Extracts CVEs from provided report, returns data as tuple """
     

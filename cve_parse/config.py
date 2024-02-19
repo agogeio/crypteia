@@ -2,8 +2,12 @@ import json
 import os
 import sys
 
-def bootstrap():
-    """Bootstrap configuration files for cve_parse"""
+def bootstrap() -> dict:
+    """
+    bootstrap looks for the app_config.json and user_config.json
+    in the ./config directory.  The function returns two dicts
+    one for the app_config and the user_config.
+    """
     
     print("\n***** Beginning processing of configuration files *****\n")
     
