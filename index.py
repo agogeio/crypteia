@@ -14,9 +14,10 @@ if __name__ == "__main__":
     app_config, user_config = config.bootstrap()
     
     #* Download required files for operations
+    kev.download(app_config, user_config)
     epss.download(app_config, user_config)
     exploitdb.download(app_config, user_config)
-    kev.download(app_config, user_config)
+
     nomi.download(app_config, user_config)
     
     #! I need to update the NVD dataset to use utils

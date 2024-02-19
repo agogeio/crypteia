@@ -4,7 +4,7 @@ import sys
 from cve_parse import utils
 from urllib.request import urlretrieve
 
-THREAT_INTEL_TYPE = 'CISA_KEV'
+THREAT_INTEL_TYPE = 'EPSS'
 
 def download(app_config: dict, user_config: dict):
     """ Downloads the EPSS C file """
