@@ -1,11 +1,12 @@
 import json
-import os
 import sys
 
 import pandas as pd
 
-from urllib.request import urlretrieve
+from cve_parse import utils
 
+
+THREAT_INTEL_TYPE = 'CISA_KEV'
 
 def build_report(KEV_df: pd.DataFrame, cve_data: list) -> list:  
     
@@ -54,40 +55,45 @@ def download(app_config: dict, user_config: dict):
     
     print("\n***** Beginning processing of CISA KEV files *****\n")
     
+    AUTO_DOWNLOAD_ALL = user_config["AUTO_DOWNLOAD_ALL"]
+    CISA_KEV_DATA_AUTO_UPDATE = user_config["CISA_KEV_DATA_AUTO_UPDATE"]
+    
     CISA_KEV_DOWNLOAD_URL = app_config["download_URLs"]["CISA_KEV_DOWNLOAD_URL"]
     CISA_KEV_DIR = app_config["CISA_KEV_DIR"]
     CISA_KEV_FILE = app_config["CISA_KEV_FILE"]
+    
     CISA_KEV_PATH = CISA_KEV_DIR+CISA_KEV_FILE
     
-    CISA_KEV_download = False
+    #* Checks if the directory exists and will try and create it
+    response = utils.directory_manager(CISA_KEV_DIR)
+    if "error" in response.keys():
+        print(f"{THREAT_INTEL_TYPE} directory_manager error: {response["error"]}")
+    elif "error" not in response.keys():
+        print(f"{THREAT_INTEL_TYPE} directory_manager message: {response["message"]}")
+    else:
+        sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
     
-    if os.path.isfile(CISA_KEV_PATH):
-        print(f"Existing CISA KEV file located at: {CISA_KEV_PATH}")
-        if user_config["CISA_KEV_DATA_AUTO_UPDATE"] == "True":
-            print("CISA KEV is configured for auto update, downloading CISA KEV update")
-            CISA_KEV_download = True
-        elif user_config["CISA_KEV_DATA_AUTO_UPDATE"] == "False":
-            print("CISA KEV is not configured for auto update, no CISA KEV update will be downloaded.")
-            print("Warning, you may be using an outdated version of the CISA KEV list")
-    elif not os.path.isfile(CISA_KEV_PATH):
-        print(f"No existing CISA KEV file found at location: {CISA_KEV_PATH}")
-        if user_config["AUTO_DOWNLOAD_ALL"] == "True":
-            print(f"Auto download set to {user_config['AUTO_DOWNLOAD_ALL']}, CISA KEV will be downloaded")
-            CISA_KEV_download = True
-        elif user_config["AUTO_DOWNLOAD_ALL"] == "False":
-            print(f"Auto download set to {user_config['AUTO_DOWNLOAD_ALL']}, CISA KEV will not be downloaded")    
-        else:
-            sys.exit("No CISA KEV File found, error processing user config settings, terminating program")
-        
-    if CISA_KEV_download == True:
-        try:
-            if not os.path.exists(CISA_KEV_DIR):
-                os.makedirs(CISA_KEV_DIR)
-            urlretrieve(url=CISA_KEV_DOWNLOAD_URL, filename=CISA_KEV_PATH)
-        except Exception as e:
-            sys.exit(f"Failed to process CISA KEV file with error: {e}")
-        else:
-            print(f"Updated CISA KEV file at: {CISA_KEV_PATH}")
+    #* Checks file age and config settings to see if files should be downloaded
+    response = utils.file_manager(AUTO_DOWNLOAD_ALL, CISA_KEV_DATA_AUTO_UPDATE, CISA_KEV_PATH)
+    if "error" in response.keys():
+        print(f"{THREAT_INTEL_TYPE} file_manager error: {response["error"]}")
+    elif "error" not in response.keys():
+        if response['action'] == 'download':
+            response = utils.file_download(CISA_KEV_DOWNLOAD_URL, CISA_KEV_PATH)
+            print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
+        elif response['action'] == 'none':
+            print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
+    else:
+        sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -101,6 +107,7 @@ if __name__ == "__main__":
                 ['CVE-2015-2808', 'Modified', 5.0, 'None', 'NETWORK', 'LOW']]
     
     app_config, user_config = config.bootstrap()
+    download(app_config, user_config)
     kev_df = create_dataframe(app_config)
     report = build_report(kev_df, nvd_data)
     

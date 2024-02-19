@@ -1,16 +1,42 @@
 import datetime
-import json
 import os
 import requests
 import sys
-import time
 
 import pandas as pd
 
-from pathlib import Path
+from cve_parse import utils
 from datetime import datetime
 
+
 GITHUB_API_KEY = os.environ.get("NVD_API_KEY")
+
+ACTIONS = {
+    "download": "download",
+    "none": "none",
+    "terminate" : "terminate"
+}
+
+THREAT_INTEL_TYPE = 'NOMI'
+
+def create_dataframe(app_config: dict) -> pd.DataFrame:
+    """ Returns the Nomi dataset as a pd.Dataframe """
+    
+    print("\n***** Using local Nomi file to load into DataFrame *****\n")
+    
+    NOMI_DATA_DIR = app_config["NOMI_DATA_DIR"]
+    NOMI_DATA_FILE = app_config["NOMI_DATA_FILE"]
+    NOMI_FILE_PATH = NOMI_DATA_DIR+NOMI_DATA_FILE
+    
+    try:
+        nomi_df = pd.read_excel(NOMI_FILE_PATH, usecols=["cve", "url"])
+    except Exception as e:
+        sys.exit(f'Error loading {NOMI_FILE_PATH} file with error: {e}')
+    else:
+        print(f"Loaded the following file into DataFrame with success: {NOMI_FILE_PATH}")
+        
+    return nomi_df
+
 
 def load_from_github(app_config: dict) -> list:
     """ Loads CVE PoC data from the Nomi GitHub repo """
@@ -34,14 +60,12 @@ def load_from_github(app_config: dict) -> list:
     
     for year in cve_years:
         url = f'https://api.github.com/repos/{NOMI_GITHUB_OWNER}/{NOMI_GITHUB_REPO}/contents/{year}'
-
         try:
             print(f"Sending request to GitHub data at: {url}")
             response = requests.get(url, headers=headers)
         except Exception as e:
             sys.exit(f"Error when requesting {NOMI_GITHUB_REPO} data, the error was: {e}")
         else:
-            
             data = response.json()
 
             if response.status_code == 200:
@@ -66,84 +90,50 @@ def load_from_github(app_config: dict) -> list:
     return cve_poc_data
 
 
-def create_dataframe(app_config: dict) -> pd.DataFrame:
-    """ Returns the Nomi dataset as a pd.Dataframe """
-    
-    print("\n***** Using local Nomi file to load into DataFrame *****\n")
-    
-    NOMI_DATA_DIR = app_config["NOMI_DATA_DIR"]
-    NOMI_DATA_FILE = app_config["NOMI_DATA_FILE"]
-    NOMI_FILE_PATH = NOMI_DATA_DIR+NOMI_DATA_FILE
-    
-    try:
-        nomi_df = pd.read_excel(NOMI_FILE_PATH, usecols=["cve", "url"])
-    except Exception as e:
-        sys.exit(f'Error loading {NOMI_FILE_PATH} file with error: {e}')
-    else:
-        print(f"Loaded the following file into DataFrame with success: {NOMI_FILE_PATH}")
-        
-    return nomi_df
-
-
 def lookup(nomi_df: pd.DataFrame, cves: list) -> dict:
     pass
 
-def update_controller(app_config: dict, user_config: dict) -> str:
+
+def download(app_config: dict, user_config: dict) -> str:
     """  The update controller processes app and user settings, and will make sure data files are updated once per day """
     
     print("\n***** Evoking the Nomi CVE PoC update controller *****\n")
     
     AUTO_DOWNLOAD_ALL = user_config["AUTO_DOWNLOAD_ALL"]
+    NOMI_DATA_AUTO_UPDATE = user_config["NOMI_DATA_AUTO_UPDATE"]
+    
     NOMI_DATA_DIR = app_config["NOMI_DATA_DIR"]
     NOMI_DATA_FILE = app_config["NOMI_DATA_FILE"]
+    
     NOMI_FILE_PATH = NOMI_DATA_DIR+NOMI_DATA_FILE
-    NOMI_DATA_AUTO_UPDATE = user_config["NOMI_DATA_AUTO_UPDATE"]
-   
-    if AUTO_DOWNLOAD_ALL == "True" or NOMI_DATA_AUTO_UPDATE == "True":
-        
-        if not os.path.exists(NOMI_DATA_DIR):
-            print(f"The directory {NOMI_DATA_DIR} was not found, attempting to create the directory")
-        
-            try:
-                os.makedirs(NOMI_DATA_DIR)
-            except Exception as e:
-                print(f"There was a problem creating director {NOMI_DATA_DIR}, the error was: {e}")
-                sys.exit("Terminating the job, there maybe a permissions issues or you maybe executing from immutable media.")
-            else:
-                print(f"The directory {NOMI_DATA_DIR} was created.")
-        else:
-            print(f"The directory {NOMI_DATA_DIR} was found on the system.")
-
-            
-        if not os.path.exists(NOMI_FILE_PATH):
-            if AUTO_DOWNLOAD_ALL == "True":
-                print(f"The file {NOMI_FILE_PATH} was not found and the user_config.json AUTO_DOWNLOAD_ALL is set to True")
-                cve_poc_data = load_from_github(app_config)
-                #! Need to create the write data to file function which would need the app_config, user_config, and the cve_poc_data
-                write_file(app_config, cve_poc_data)
-                
-        elif os.path.exists(NOMI_FILE_PATH):
-            if NOMI_DATA_AUTO_UPDATE == "True":
-
-                print(f"The file at location {NOMI_FILE_PATH} was found, but the user_config.json file flag NOMI_DATA_AUTO_UPDATE is set to True")
-                file_path = Path(NOMI_FILE_PATH)
-                creation_time = file_path.stat().st_ctime
-                creation_date = datetime.fromtimestamp(creation_time)
-                creation_date = creation_date.strftime('%B, %d, %Y')
-               
-                
-                current_date = time.time()
-                current_date = datetime.fromtimestamp(current_date)
-                current_date = current_date.strftime('%B, %d, %Y')
-                
-                if creation_date == current_date:
-                    print(f"Last download time was {creation_date}, files are only updated daily, data will update tomorrow")
-                else:
-                    cve_poc_data = load_from_github(app_config)
-                    write_file(app_config, cve_poc_data)
+    
+    #* Checks if the directory exists and will try and create it
+    response = utils.directory_manager(NOMI_DATA_DIR)
+    if "error" in response.keys():
+        print(f"{THREAT_INTEL_TYPE} directory_manager error: {response["error"]}")
+    elif "error" not in response.keys():
+        print(f"{THREAT_INTEL_TYPE} directory_manager message: {response["message"]}")
+    else:
+        sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
+    
+    #* Checks file age and config settings to see if files should be downloaded
+    response = utils.file_manager(AUTO_DOWNLOAD_ALL, NOMI_DATA_AUTO_UPDATE, NOMI_FILE_PATH)
+    if "error" in response.keys():
+        print(f"{THREAT_INTEL_TYPE} file_manager error: {response["error"]}")
+    elif "error" not in response.keys():
+        if response['action'] == 'download':
+            #* Nomi needs many files, so we do not use the files_download function in utils
+            nomi_data = load_from_github(app_config)
+            response = write_file(app_config, nomi_data)
+            print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
+        elif response['action'] == 'none':
+            print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
+    else:
+        sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
 
 
-def write_file(app_config: dict, nomi_data: list):
+#! Update the responses
+def write_file(app_config: dict, nomi_data: list) -> dict:
     """ Writes the Nomi CVE PoC data to a data file """
     
     print("\n***** Writing the Nomi CVE PoC date to a file *****\n")
@@ -157,11 +147,20 @@ def write_file(app_config: dict, nomi_data: list):
     try:
         nomi_df.to_excel(NOMI_FILE_PATH)
     except Exception as e:
-        print(f"There was an issue writing the file {NOMI_FILE_PATH}, the error was: {e}")
+        message = f"Error writing file: {NOMI_FILE_PATH}, the error was: {e}"
+        response = {
+            "action" : ACTIONS["none"],
+            "message" : message,
+            "error" : f'{e}'
+        }
     else:
-        print(f"The file {NOMI_FILE_PATH} was written to the file system.")
-
-
+        message = f"File: {NOMI_FILE_PATH} was written to the file system at location."
+        response = {
+            "action" : ACTIONS["none"],
+            "message" : message
+        }
+        
+        return response
 
 
 if __name__ == "__main__":
@@ -175,9 +174,4 @@ if __name__ == "__main__":
             ['CVE-2015-2808', 'Modified', 5.0, 'None', 'NETWORK', 'LOW']]
     
     app_config, user_config = config.bootstrap()
-    update_controller(app_config, user_config)
-    nomi_df = create_dataframe(app_config)
-    
-    lookup(nomi_df, )
-    
-    print(nomi_df)
+    download(app_config, user_config)

@@ -1,11 +1,10 @@
-import os
-import pandas as pd
 import time
 
 from cve_parse import config
 from cve_parse import epss
 from cve_parse import exploitdb
 from cve_parse import kev
+from cve_parse import nomi
 from cve_parse import nvd
 from cve_parse import vuln_report
 from cve_parse import write_report
@@ -18,7 +17,11 @@ if __name__ == "__main__":
     epss.download(app_config, user_config)
     exploitdb.download(app_config, user_config)
     kev.download(app_config, user_config)
+    nomi.download(app_config, user_config)
+    
+    #! I need to update the NVD dataset to use utils
     nvd.download(app_config, user_config)
+    
     print(f"\nTotal Download Time: {round((time.time() - start)/60, 2)} minutes")
     
     #* Extract required data from exploit DB

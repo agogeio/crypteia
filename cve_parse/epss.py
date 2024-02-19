@@ -1,15 +1,18 @@
-import gzip
-import os
-import shutil
 import sys
 
+
+from cve_parse import utils
 from urllib.request import urlretrieve
 
+THREAT_INTEL_TYPE = 'CISA_KEV'
 
 def download(app_config: dict, user_config: dict):
     """ Downloads the EPSS C file """
     
     print("\n***** Beginning processing of EPSS files *****\n")
+    
+    AUTO_DOWNLOAD_ALL = user_config["AUTO_DOWNLOAD_ALL"]
+    EPSS_DATA_AUTO_UPDATE = user_config["EPSS_DATA_AUTO_UPDATE"]
     
     EPSS_DOWNLOAD_URL = app_config["download_URLs"]["EPSS_DOWNLOAD_URL"]
     EPSS_DIR=app_config["EPSS_DIR"]
@@ -17,44 +20,31 @@ def download(app_config: dict, user_config: dict):
     EPSS_GZ_FILE=app_config["EPSS_GZ_FILE"]
     EPSS_GZ_PATH=EPSS_DIR+EPSS_GZ_FILE
     EPSS_PATH=EPSS_DIR+EPSS_FILE
+
     
-    EPSS_download = False
+    #* Checks if the directory exists and will try and create it
+    response = utils.directory_manager(EPSS_DIR)
+    if "error" in response.keys():
+        print(f"{THREAT_INTEL_TYPE} directory_manager error: {response["error"]}")
+    elif "error" not in response.keys():
+        print(f"{THREAT_INTEL_TYPE} directory_manager message: {response["message"]}")
+    else:
+        sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
     
-    if os.path.isfile(EPSS_PATH):
-        print(f"Existing EPSS file located at: {EPSS_PATH}")
-        if user_config["EPSS_DATA_AUTO_UPDATE"] == "True":
-            print("EPSS is configured for auto update, downloading EPSS update")
-            EPSS_download = True
-        elif user_config["EPSS_DATA_AUTO_UPDATE"] == "False":
-            print("EPSS is not configured for auto update, no EPSS update will be downloaded.")
-            print("Warning, you may be using outdated EPSS data")
-    elif not os.path.isfile(EPSS_PATH):
-        print(f"No existing EPSS file found at location: {EPSS_PATH}")
-        if user_config["AUTO_DOWNLOAD_ALL"] == "True":
-            print(f"Auto download set to {user_config['AUTO_DOWNLOAD_ALL']}, EPSS will be downloaded")
-            EPSS_download = True
-        elif user_config["AUTO_DOWNLOAD_ALL"] == "False":
-            print(f"Auto download set to {user_config['AUTO_DOWNLOAD_ALL']}, EPSS will not be downloaded")    
-        else:
-            sys.exit("No EPSS file found, error processing user config settings, terminating program")
-        
-    if EPSS_download == True:
-        try:
-            if not os.path.exists(EPSS_DIR):
-                os.makedirs(EPSS_DIR)
-                print(f"Creating directory {EPSS_DIR}")
+    #* Checks file age and config settings to see if files should be downloaded
+    response = utils.file_manager(AUTO_DOWNLOAD_ALL, EPSS_DATA_AUTO_UPDATE, EPSS_PATH)
+    if "error" in response.keys():
+        print(f"{THREAT_INTEL_TYPE} file_manager error: {response["error"]}")
+    elif "error" not in response.keys():
+        if response['action'] == 'download':
+            response = utils.file_download(EPSS_DOWNLOAD_URL, EPSS_GZ_PATH)
+            utils.un_gz(EPSS_GZ_PATH, EPSS_PATH)
+            print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
+        elif response['action'] == 'none':
+            print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
+    else:
+        sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
 
-            urlretrieve(url=EPSS_DOWNLOAD_URL, filename=EPSS_GZ_PATH)
-
-            with gzip.open(EPSS_GZ_PATH, 'rb') as epss_gz:
-                with open(EPSS_PATH, 'wb') as epss_csv:
-                    shutil.copyfileobj(epss_gz, epss_csv)
-
-            os.remove(EPSS_GZ_PATH)
-        except Exception as e:
-            sys.exit(f"Failed to process EPSS file: {e}")
-        else:
-            print(f"Updated EPSS file at: {EPSS_PATH}")
             
             
 if __name__ == "__main__":
