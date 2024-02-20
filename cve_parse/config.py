@@ -24,6 +24,7 @@ def bootstrap() -> dict:
             print(f"Application configuration settings loaded from: {APP_CONFIG_FILE}")
     else:
         sys.exit(f"Application configuration file not found at location: {APP_CONFIG_FILE}")
+
     
     if os.path.isfile(USER_CONFIG_FILE):
         try:

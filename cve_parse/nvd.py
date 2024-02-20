@@ -88,14 +88,14 @@ def download(app_config: dict, user_config: dict):
             except Exception as e:
                 print(f"Error downloading NVD files: {e}")
             else:
-                response = utils.un_gz(nvd_gz_file_path, nvd_file_path)
+                response = utils.un_gzip(nvd_gz_file_path, nvd_file_path)
                 
                 if "error" not in response.keys():
                     print(f"Response: {response["message"]}")
                 elif "error" in response.keys():
                     print(f"Error: {response["error"]}")
                 else:
-                    print(f"un_gz() Unknown status")
+                    print(f"un_gzip() Unknown status")
 
         merge(app_config)
 
@@ -127,7 +127,7 @@ def download(app_config: dict, user_config: dict):
                 except Exception as e:
                     print(f"Error downloading NVD files: {e}")
                 else:
-                    response = utils.un_gz(nvd_gz_file_path, nvd_file_path)
+                    response = utils.un_gzip(nvd_gz_file_path, nvd_file_path)
                     
                     if "error" not in response.keys():
                         print(f"Response: {response["message"]}")
@@ -181,6 +181,8 @@ def nvd_controller(app_config: dict, user_config: dict, unique_cves: tuple) -> l
     
     print("\n***** Entering load controller for NVD data processing *****\n")
     
+    
+    #! I need to fix the logic in the NVD controller, the configuration file is set to use local but API information is still executing
     if USE_NVD_API == 'True' and USE_NVD_LOCAL == 'True':
         sys.exit('There is an error in your configuration file: USE_NVD_API and USE_NVD_LOCAL are both set to True, only one can be set to True.')
     
@@ -443,7 +445,7 @@ def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_d
     return cve_list
 
 
-# def un_gz(gz_file_path, file_path) -> dict:
+# def un_gzip(gz_file_path, file_path) -> dict:
 #     """ Un-gz NVD Files """
 #     try:
 #         with gzip.open(gz_file_path, 'rb') as nvd_file_path_gz:

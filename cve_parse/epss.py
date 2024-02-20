@@ -36,7 +36,7 @@ def download(app_config: dict, user_config: dict):
     elif "error" not in response.keys():
         if response['action'] == 'download':
             response = utils.file_download(EPSS_DOWNLOAD_URL, EPSS_GZ_PATH)
-            utils.un_gz(EPSS_GZ_PATH, EPSS_PATH)
+            utils.un_gzip(EPSS_GZ_PATH, EPSS_PATH)
             print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
         elif response['action'] == 'none':
             print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
