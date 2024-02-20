@@ -24,13 +24,13 @@ STATUS_OK = 200
 def directory_manager(DATA_DIR: str) -> dict:
     """
     Receives directory and will validate it exists, if the directory does not exist it will attempt 
-    to create it. Returns a dict with keys of ["action"], ["message"], and ["error"] if present.
+    to create it. 
 
     Args:
         DATA_DIR (str): The path of the directory to be evaluated
 
     Returns:
-        dict: with elements: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
+        dict: with keys: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
     """
 
     #* Check if the data directory exist.
@@ -60,7 +60,7 @@ def file_download(URL: str, DATA_FILE_PATH: str) -> dict:
         DATA_FILE_PATH (str): Path on disk where the file should be written
 
     Returns:
-        dict: with elements: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
+        dict: with keys: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
     """
     
     try:
@@ -79,7 +79,7 @@ def out_of_date(FILE_PATH: str) -> dict:
     modified today a "download" action will be returned
 
     Returns:
-        dict: with elements: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
+        dict: with keys: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
     """
     
     if os.path.exists(FILE_PATH):
@@ -123,7 +123,7 @@ def file_manager(AUTO_DOWNLOAD_ALL: str, DATA_AUTO_UPDATE: str, DATA_FILE_PATH: 
         DATA_FILE_PATH (str): If the location of the file to validate
 
     Returns:
-        dict: with elements: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
+        dict: with keys: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
     """
      
     #* FILE DOES EXIST:
@@ -160,7 +160,7 @@ def un_gzip(gz_file_path, file_path) -> dict:
         file_path (_type_): File path location to the unzipped file
 
     Returns:
-        dict: with elements: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
+        dict: with keys: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
     """
     
     try:

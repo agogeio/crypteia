@@ -29,7 +29,7 @@ if __name__ == "__main__":
     #* Capture the returned KEV Dataframe
     kev_dataframe = kev.create_dataframe(app_config)
     #* Update the vulnerability report with KEV data
-    kev_report = kev.build_report(kev_dataframe, nvd_data)
+    kev_report = kev.enrich_with_kev(kev_dataframe, nvd_data)
     #* In the write report file there is also an option to write a csv file
     excel_file_path = write_report.excel(user_config, kev_report)
 

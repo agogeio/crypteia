@@ -7,9 +7,24 @@ from cve_parse import utils
 
 THREAT_INTEL_TYPE = 'CISA_KEV'
 
-def build_report(KEV_df: pd.DataFrame, cve_data: list) -> list:  
-    
-    print("\n***** Enhancing report data with CISA KEV data *****\n")
+STATUS_ERROR = 400
+STATUS_TERMINATE = 500
+STATUS_OK = 200
+
+def enrich_with_kev(KEV_df: pd.DataFrame, cve_data: list) -> dict:  
+    """
+    Accepts a Pandas Dataframe that holds CISA KEV data and a list of the CVEs to 
+    be enriched. CVEs will be tagged as being in the CISA KEV database or not, and 
+    if a CVE is in the CISA KEV database they will be tagged as being using in 
+    ransomware campaigns or not.
+
+    Args:
+        KEV_df (pd.DataFrame): Accepts a Dataframe that consists of the CISA_KEV data
+        cve_data (list): A list of CVEs to process and enrich
+
+    Returns:
+        dict: with keys: data, error (if present), message, report_columns, status (200 for ok, 400 for error, 500 for terminate)
+    """
     
     cves = cve_data
     for cve in cves:
@@ -21,16 +36,26 @@ def build_report(KEV_df: pd.DataFrame, cve_data: list) -> list:
             ransomwareUse = result["knownRansomwareCampaignUse"].values
             cve.append("In KEV")
             cve.append(ransomwareUse[0])
-    
-    print("KEV data processing complete")        
-    
-    return cves
+
+    columns = ["isKEV", "knownRansomwareCampaignUse"]
+    message = f"{len(cves)} unique CVEs processed"
+    response = {"data": cves, "message": message, "columns": columns, "status": STATUS_OK}
+    return response
 
 
+#! Working here
 def create_dataframe(app_config: dict):
-    """ Returns the KEV dataset as a pd.Dataframe """
-    
-    print("\n***** Using local CISA KEV file to load into DataFrame *****\n")
+    """
+    Accepts data from the application configuration and reads 
+    the CISA_KEV_DIR and CISA_KEV_FILE values. The KEV file in JSON format
+    is read and is loaded into a Pandas DataFrame for processing.
+
+    Args:
+        app_config (dict): Required the application configuration object
+
+    Returns:
+        _type_: _description_
+    """
     
     CISA_KEV_DIR = app_config["CISA_KEV_DIR"]
     CISA_KEV_FILE = app_config["CISA_KEV_FILE"]
@@ -48,7 +73,7 @@ def create_dataframe(app_config: dict):
         
     return KEV_df
 
-#! Need to create the KEV update controller
+
 def download(app_config: dict, user_config: dict):
     """ Downloads the KEV JSON file """
     
@@ -88,13 +113,6 @@ def download(app_config: dict, user_config: dict):
 
 
 
-
-
-
-
-
-
-
 if __name__ == "__main__":
     import config
     
@@ -106,8 +124,8 @@ if __name__ == "__main__":
                 ['CVE-2015-2808', 'Modified', 5.0, 'None', 'NETWORK', 'LOW']]
     
     app_config, user_config = config.bootstrap()
-    download(app_config, user_config)
+    # download(app_config, user_config)
     kev_df = create_dataframe(app_config)
-    report = build_report(kev_df, nvd_data)
+    report = enrich_with_kev(kev_df, nvd_data)
     
-    print(f'KEV Report:\n{report}')
+    print(f'{report["data"]}')
