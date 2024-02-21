@@ -43,7 +43,6 @@ def enrich_with_kev(KEV_df: pd.DataFrame, cve_data: list) -> dict:
     return response
 
 
-#! Working here
 def create_dataframe(app_config: dict):
     """
     Accepts data from the application configuration and reads 
@@ -54,7 +53,7 @@ def create_dataframe(app_config: dict):
         app_config (dict): Required the application configuration object
 
     Returns:
-        _type_: _description_
+        dict: with keys: data, error (if present), message, report_columns, status (200 for ok, 400 for error, 500 for terminate)
     """
     
     CISA_KEV_DIR = app_config["CISA_KEV_DIR"]
@@ -62,16 +61,22 @@ def create_dataframe(app_config: dict):
     CISA_KEV_PATH = CISA_KEV_DIR+CISA_KEV_FILE
     
     try:
-        with open(CISA_KEV_PATH) as KEV_file:
-            KEV_data = KEV_file.read()
+        with open(CISA_KEV_PATH) as kev_json_file:
+            kev_file_object = kev_json_file.read()
     except Exception as e:
         sys.exit(f'Error loading KEV File: {e}')
     else:
-        KEV_json = json.loads(KEV_data)
-        KEV_df =  pd.DataFrame.from_dict(KEV_json["vulnerabilities"])
-        print(f"Loaded the following file into DataFrame with success: {CISA_KEV_PATH}")
+        kev_json_data = json.loads(kev_file_object)
+        kev_dataframe =  pd.DataFrame.from_dict(kev_json_data["vulnerabilities"])
         
-    return KEV_df
+        message = f"Loaded {CISA_KEV_PATH} into kev_dataframe"
+        response = {
+            "data" : kev_dataframe,
+            "message" : message,
+            "status" : STATUS_OK
+        }
+        
+    return response
 
 
 def download(app_config: dict, user_config: dict):
@@ -111,8 +116,6 @@ def download(app_config: dict, user_config: dict):
         sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
 
 
-
-
 if __name__ == "__main__":
     import config
     
@@ -124,8 +127,6 @@ if __name__ == "__main__":
                 ['CVE-2015-2808', 'Modified', 5.0, 'None', 'NETWORK', 'LOW']]
     
     app_config, user_config = config.bootstrap()
-    # download(app_config, user_config)
     kev_df = create_dataframe(app_config)
-    report = enrich_with_kev(kev_df, nvd_data)
-    
-    print(f'{report["data"]}')
+    report = enrich_with_kev(kev_df["data"], nvd_data)
+    print(f'{report["data"]}, {report["columns"]}')

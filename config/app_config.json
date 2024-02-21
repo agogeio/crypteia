@@ -1,13 +1,9 @@
 {
     "download_URLs": {
         "CISA_KEV_DOWNLOAD_URL": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
-
         "EPSS_DOWNLOAD_URL" : "https://epss.cyentia.com/epss_scores-current.csv.gz",
-
         "EXPLOITDB_DOWNLOAD_URL": "https://gitlab.com/exploit-database/exploitdb/-/raw/main/ghdb.xml",
-
         "NVD_API_BASE_URL": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=",
-
         "NVD_DATA_BASE_URL": "https://nvd.nist.gov/feeds/json/cve/1.1/",
         "NVD_DATA_DOWNLOAD_URLS": [
             "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2002.json.gz",
@@ -81,5 +77,7 @@
     "NOMI_GITHUB_REPO": "PoC-in-GitHub",
 
     "NVD_DATA_DIR": "./data/nvd/",
-    "NVD_FILE": "nvd_database.json"
+    "NVD_FILE": "nvd_database.json",
+
+    "BASE_REPORT_COLUMNS": ["cveID", "vulnStatus", "baseScore", "baseSeverity", "attackVector", "accessComplexity", "vectorString"]
 }
