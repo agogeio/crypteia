@@ -40,6 +40,7 @@ def bootstrap() -> dict:
 
     return app_config, user_config
 
+
 if __name__ == "__main__":
     app_config, user_config = bootstrap()
     print(json.dumps(app_config, indent=4))

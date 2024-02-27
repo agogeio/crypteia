@@ -2,11 +2,10 @@ import datetime
 import gzip
 import os
 import shutil
-import sys
 import time
+import pathlib
 
 from datetime import datetime
-from pathlib import Path
 from urllib.request import urlretrieve
 
 DEBUG = os.environ.get("DEBUG")
@@ -81,9 +80,9 @@ def out_of_date(FILE_PATH: str) -> dict:
     Returns:
         dict: with keys: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
     """
-    
-    if os.path.exists(FILE_PATH):
-        file_path = Path(FILE_PATH)
+
+    if pathlib.Path(FILE_PATH).is_file():
+        file_path = pathlib.Path(FILE_PATH)
         creation_time = file_path.stat().st_mtime
         modified_date = datetime.fromtimestamp(creation_time)
         modified_date = modified_date.strftime('%B, %d, %Y')
@@ -93,6 +92,7 @@ def out_of_date(FILE_PATH: str) -> dict:
         current_date = current_date.strftime('%B, %d, %Y')
         
         if modified_date == current_date:
+            print(f"out_of_date() if modified is current date {file_path}")
             message = f"{FILE_PATH} modified {modified_date}, not download"
             response = {"action" : ACTIONS["none"], "message" : message, "status": STATUS_OK}
             return response
@@ -102,7 +102,7 @@ def out_of_date(FILE_PATH: str) -> dict:
             response = {"action" : ACTIONS["download"], "message" : message, "status": STATUS_OK}
             return response
         
-    if not os.path.exists(FILE_PATH):
+    if not pathlib.Path(FILE_PATH).is_file():
         message = f"{FILE_PATH} does not exist, download"
         response = {"action" : ACTIONS["download"], "message" : message, "status": STATUS_OK}
         return response
@@ -125,9 +125,14 @@ def file_manager(AUTO_DOWNLOAD_ALL: str, DATA_AUTO_UPDATE: str, DATA_FILE_PATH: 
     Returns:
         dict: with keys: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
     """
+    
+    DATA_FILE_PATH = pathlib.Path(DATA_FILE_PATH)
+    
+    print(f"Validating File: {DATA_FILE_PATH}")
      
     #* FILE DOES EXIST:
-    if os.path.exists(DATA_FILE_PATH):
+    if pathlib.Path(DATA_FILE_PATH).is_file():
+        print(F"file_manager() does exist {DATA_FILE_PATH}")
         #* If FILE DOES EXIST AND AUTO UPDATE IS TRUE!
         if DATA_AUTO_UPDATE == "True":
             response = out_of_date(DATA_FILE_PATH)
@@ -138,7 +143,7 @@ def file_manager(AUTO_DOWNLOAD_ALL: str, DATA_AUTO_UPDATE: str, DATA_FILE_PATH: 
             return response
         
     #* FILE DOES NOT EXIST:    
-    if not os.path.exists(DATA_FILE_PATH):
+    if not pathlib.Path(DATA_FILE_PATH).is_file():
         #*  FILE DOES NOT EXIST AND AUTO DOWNLOAD SET TO TRUE - SYSTEM CAN CONTINUE TO RUN
         if AUTO_DOWNLOAD_ALL == "True":
             message = f"{DATA_FILE_PATH} not found. AUTO_DOWNLOAD_ALL set to 'True' in user_config.json, download"
@@ -151,7 +156,7 @@ def file_manager(AUTO_DOWNLOAD_ALL: str, DATA_AUTO_UPDATE: str, DATA_FILE_PATH: 
             return response
 
 
-def un_gzip(gz_file_path, file_path) -> dict:
+def un_gzip(gz_file_path: str , file_path: str) -> dict:
     """
     General utility to un_gzip downloaded files
 
@@ -174,10 +179,8 @@ def un_gzip(gz_file_path, file_path) -> dict:
         os.remove(gz_file_path)
         response = {"action": ACTIONS["none"], "message":f"{file_path} extracted from {gz_file_path}", "status": STATUS_OK}
         return response
-    
+
 
 if __name__ == "__main__":
     import config
     app_config, user_config = config.bootstrap()
-    # update = update_controller(app_config, user_config, "NOMI")
-    

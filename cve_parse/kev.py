@@ -26,6 +26,10 @@ def enrich_with_kev(KEV_df: pd.DataFrame, cve_data: list) -> dict:
         dict: with keys: data, error (if present), message, report_columns, status (200 for ok, 400 for error, 500 for terminate)
     """
     
+    # STATUS_ERROR = app_config["STATUS_CODES"]["STATUS_ERROR"]
+    # STATUS_TERMINATE = app_config["STATUS_CODES"]["STATUS_TERMINATE"]
+    # STATUS_OK = app_config["STATUS_CODES"]["STATUS_OK"]
+    
     cves = cve_data
     for cve in cves:
         result = KEV_df.loc[KEV_df["cveID"] == cve[0]]
@@ -70,11 +74,7 @@ def create_dataframe(app_config: dict):
         kev_dataframe =  pd.DataFrame.from_dict(kev_json_data["vulnerabilities"])
         
         message = f"Loaded {CISA_KEV_PATH} into kev_dataframe"
-        response = {
-            "data" : kev_dataframe,
-            "message" : message,
-            "status" : STATUS_OK
-        }
+        response = {"data" : kev_dataframe, "message" : message, "status" : STATUS_OK}
         
     return response
 

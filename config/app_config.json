@@ -59,6 +59,18 @@
         "nvdcve-1.1-2024.json"
     ],
 
+    "STATUS_CODES" : {
+        "STATUS_ERROR": "400",
+        "STATUS_TERMINATE": 500,
+        "STATUS_OK": 200
+    },
+
+    "ACTIONS": {
+        "DOWNLOAD": "DOWNLOAD",
+        "NONE": "NONE",
+        "TERMINATE" : "TERMINATE"
+    },
+
     "CISA_KEV_DIR":"./data/cisa_kev/",
     "CISA_KEV_FILE":"known_exploited_vulnerabilities.json",
 

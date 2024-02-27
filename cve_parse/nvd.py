@@ -12,10 +12,17 @@ NVD_API_KEY = os.environ.get("NVD_API_KEY")
 
 THREAT_INTEL_TYPE = 'NVD'
 
+ACTIONS = {
+    "download": "download",
+    "none": "none",
+    "terminate" : "terminate"
+}
+
 STATUS_ERROR = 400
 STATUS_TERMINATE = 500
 STATUS_OK = 200
 
+#! Updated with dict response
 def calculate_run_time(unique_cves: tuple) -> dict:
     """
     Calculates the run time when using the NVD API based on API 
@@ -50,12 +57,7 @@ def calculate_run_time(unique_cves: tuple) -> dict:
         status = STATUS_ERROR
         
     message = f'{number_of_cves} unique CVEs processed, this process will take roughly {time_to_process} minutes due to NVD API rate limiting'
-    
-    response = {
-        "data": nvd_sleep_timer,
-        "message": message,
-        "status" : status
-    }
+    response = {"data": nvd_sleep_timer, "message": message, "status" : status}
     
     return response
 
@@ -89,13 +91,7 @@ def check_missing_files(nvd_file_paths) -> dict:
         
     data = nvd_missing_files
     
-    response = {
-        "data": data,
-        "error": error,
-        "message": "Missing NVD files analyzed",
-        "status": status
-    }
-
+    response = {"data": data, "error": error, "message": "Missing NVD files analyzed", "status": status }
     return response
 
 
@@ -139,23 +135,31 @@ def download(app_config: dict, user_config: dict) -> dict:
         }
 
         nvd_download_data.append(nvd_data)
+
+        for data in nvd_download_data:
+                
+            #* Checks file age and config settings to see if files should be downloaded
+            response = utils.file_manager(AUTO_DOWNLOAD_ALL, NVD_DATA_AUTO_UPDATE, data["nvd_file_path"])
+            if "error" in response.keys():
+                print(f"{response["error"]}")
+            elif "error" not in response.keys():
+                if response['action'] == 'download':
+                    response = utils.file_download(data["nvd_url"], data["nvd_gz_file_path"])
+                    utils.un_gzip(data["nvd_gz_file_path"], data["nvd_file_path"])
+                    print(f"{response['message']}")
+                    merge = True
+                elif response['action'] == 'none':
+                    print(f"{response['message']}")
+            else:
+                sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
+
         
-    for data in nvd_download_data:
-        #* Checks file age and config settings to see if files should be downloaded
-        response = utils.file_manager(AUTO_DOWNLOAD_ALL, NVD_DATA_AUTO_UPDATE, data["nvd_file_path"])
-        if "error" in response.keys():
-            print(f"{response["error"]}")
-        elif "error" not in response.keys():
-            if response['action'] == 'download':
-                response = utils.file_download(data["nvd_url"], data["nvd_gz_file_path"])
-                utils.un_gzip(data["nvd_gz_file_path"], data["nvd_file_path"])
-                print(f"{response['message']}")
-                merge = True
-            elif response['action'] == 'none':
-                print(f"{response['message']}")
-        else:
-            sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
+        
+
             
+        
+    
+    #! I don't love this, need to put merge on it's own        
     if merge == True: filter_and_merge(app_config)
 
     
@@ -260,20 +264,20 @@ def nvd_controller(app_config: dict, user_config: dict, unique_cves: tuple) -> l
     elif USE_NVD_API == 'True':
         
         #? If using the API, call load_from_api function
-        print("\n***** Configuration set for NVD API use, this could take an extensive period of time for a large number of CVEs *****\n")
+        print("\n***** The user_config.json file variable USE_NVD_API is set to True, this could take an extensive period of time for a large number of CVEs *****\n")
         
         nvd_sleep_timer = calculate_run_time(unique_cves)
         nvd_data = load_from_api(app_config, unique_cves, nvd_sleep_timer)
         return nvd_data
         
     elif USE_NVD_LOCAL == 'True':
-        print("\n***** Configuration set for NVD API use, this will take several GB memory to load the NVD data into memory *****\n")
+        print("\n***** The user_config.json file variable USE_NVD_LOCAL is set to True, this will take several GB memory *****\n")
  
         #? If using local data store load the data from the file and get the Dataframe
         nvd_df = load_from_local(app_config)
         
         #? Pass the Dataframe and params to extract the needed data
-        nvd_data = process_local(app_config, user_config, unique_cves, nvd_df)
+        nvd_data = process_local(unique_cves, nvd_df)
 
         #? Return the report data back in a common format.
         print("Returning local NVD data report")
@@ -396,7 +400,7 @@ def load_from_local(app_config: dict) -> pd.DataFrame: #, unique_cves: tuple
 
 
 #! Need to fix responses to match dict output
-def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_df: pd.DataFrame) -> list:
+def process_local(unique_cves: tuple, nvd_df: pd.DataFrame) -> list:
     """ Takes application & user configs and extracts CVE information from the supplied dataframe """
     print("\n***** Beginning data extraction from the local NVD database *****\n")
     
@@ -404,9 +408,12 @@ def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_d
     
     for cve in unique_cves:
         
-        # print(f"\nProcessing CVE: {cve}")
+        print(f"\nProcessing CVE: {cve}")
+
         cve_record = nvd_df.loc[nvd_df['ID'] == cve]
         
+
+                
         if len(cve_record) < 1:
             print(f"Invalid CVE record submitted: {cve}")
         elif len(cve_record) == 1:
@@ -473,11 +480,13 @@ def process_local(app_config: dict, user_config: dict, unique_cves: tuple, nvd_d
 
 if __name__ == "__main__":
     
-    TEST_CVE_IDs = ["CVE-1999-0001", "CVE-2021-27103", "CVE-2021-21017", "CVE-2017-0170", "CVE-2023-4128", "CVE-2015-2808", "CVE-2023-40481"],
+    #! Test CVEs needs to be a tuple
+    TEST_CVE_IDs = ("CVE-1999-0001", "CVE-2021-27103", "CVE-2021-21017", "CVE-2017-0170", "CVE-2023-4128", "CVE-2015-2808", "CVE-2023-40481")
     
     import config
     app_config, user_config = config.bootstrap()
     download(app_config, user_config)
+    
     nvd_data = nvd_controller(app_config, user_config, TEST_CVE_IDs)
     print(nvd_data)
     
