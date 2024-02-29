@@ -1,8 +1,8 @@
 {
     "download_URLs": {
-        "CISA_KEV_DOWNLOAD_URL": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+        "KEV_DOWNLOAD_URL": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
         "EPSS_DOWNLOAD_URL" : "https://epss.cyentia.com/epss_scores-current.csv.gz",
-        "EXPLOITDB_DOWNLOAD_URL": "https://gitlab.com/exploit-database/exploitdb/-/raw/main/ghdb.xml",
+        "GHDB_DOWNLOAD_URL": "https://gitlab.com/exploit-database/exploitdb/-/raw/main/ghdb.xml",
         "NVD_API_BASE_URL": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=",
         "NVD_DATA_BASE_URL": "https://nvd.nist.gov/feeds/json/cve/1.1/",
         "NVD_DATA_DOWNLOAD_URLS": [
@@ -71,17 +71,17 @@
         "TERMINATE" : "TERMINATE"
     },
 
-    "CISA_KEV_DIR":"./data/cisa_kev/",
-    "CISA_KEV_FILE":"known_exploited_vulnerabilities.json",
+    "KEV_DIR":"./data/kev/",
+    "KEV_FILE":"known_exploited_vulnerabilities.json",
 
     "EPSS_DIR": "./data/epss/",
     "EPSS_FILE": "epss_data.csv",
     "EPSS_GZ_FILE": "epss_data.csv.gz",
 
-    "EXPLOITDB_DIR":"./data/exploitdb/",
-    "EXPLOITDB_XML_FILE":"ghdb.xml",
-    "EXPLOITDB_EXCEL_FILE":"ghdb.xlsx",
-    "EXPLOITDB_EXCLUSION_WORDS":["Dork", "dork"],
+    "GHDB_DIR":"./data/ghdb/",
+    "GHDB_XML_FILE":"ghdb.xml",
+    "GHDB_EXCEL_FILE":"ghdb.xlsx",
+    "GHDB_EXCLUSION_WORDS":["Dork", "dork"],
 
     "NOMI_DATA_DIR": "./data/nomi/",
     "NOMI_DATA_FILE": "nomi.xlsx",

@@ -5,7 +5,7 @@ import pandas as pd
 
 from cve_parse import utils
 
-THREAT_INTEL_TYPE = 'CISA_KEV'
+THREAT_INTEL_TYPE = 'KEV'
 
 STATUS_ERROR = 400
 STATUS_TERMINATE = 500
@@ -14,7 +14,7 @@ STATUS_OK = 200
 def create_dataframe(app_config: dict) -> dict:
     """
     Accepts data from the application configuration and reads 
-    the CISA_KEV_DIR and CISA_KEV_FILE values. The KEV file in JSON format
+    the KEV_DIR and KEV_FILE values. The KEV file in JSON format
     is read and is loaded into a Pandas DataFrame for processing.
 
     Args:
@@ -24,12 +24,12 @@ def create_dataframe(app_config: dict) -> dict:
         dict: with keys: data, error (if present), message, report_columns, status (200 for ok, 400 for error, 500 for terminate)
     """
     
-    CISA_KEV_DIR = app_config["CISA_KEV_DIR"]
-    CISA_KEV_FILE = app_config["CISA_KEV_FILE"]
-    CISA_KEV_PATH = CISA_KEV_DIR+CISA_KEV_FILE
+    KEV_DIR = app_config["KEV_DIR"]
+    KEV_FILE = app_config["KEV_FILE"]
+    KEV_PATH = KEV_DIR+KEV_FILE
     
     try:
-        with open(CISA_KEV_PATH) as kev_json_file:
+        with open(KEV_PATH) as kev_json_file:
             kev_file_object = kev_json_file.read()
     except Exception as e:
         sys.exit(f'Error loading KEV File: {e}')
@@ -37,7 +37,7 @@ def create_dataframe(app_config: dict) -> dict:
         kev_json_data = json.loads(kev_file_object)
         kev_dataframe =  pd.DataFrame.from_dict(kev_json_data["vulnerabilities"])
         
-        message = f"Loaded {CISA_KEV_PATH} into kev_dataframe"
+        message = f"Loaded {KEV_PATH} into kev_dataframe"
         response = {"data" : kev_dataframe, "message" : message, "status" : STATUS_OK}
         
     return response
@@ -49,16 +49,16 @@ def download(app_config: dict, user_config: dict):
     print("\n***** Beginning processing of CISA KEV files *****\n")
     
     AUTO_DOWNLOAD_ALL = user_config["AUTO_DOWNLOAD_ALL"]
-    CISA_KEV_DATA_AUTO_UPDATE = user_config["CISA_KEV_DATA_AUTO_UPDATE"]
+    KEV_DATA_AUTO_UPDATE = user_config["KEV_DATA_AUTO_UPDATE"]
     
-    CISA_KEV_DOWNLOAD_URL = app_config["download_URLs"]["CISA_KEV_DOWNLOAD_URL"]
-    CISA_KEV_DIR = app_config["CISA_KEV_DIR"]
-    CISA_KEV_FILE = app_config["CISA_KEV_FILE"]
+    KEV_DOWNLOAD_URL = app_config["download_URLs"]["KEV_DOWNLOAD_URL"]
+    KEV_DIR = app_config["KEV_DIR"]
+    KEV_FILE = app_config["KEV_FILE"]
     
-    CISA_KEV_PATH = CISA_KEV_DIR+CISA_KEV_FILE
+    KEV_PATH = KEV_DIR+KEV_FILE
     
     #* Checks if the directory exists and will try and create it
-    response = utils.directory_manager(CISA_KEV_DIR)
+    response = utils.directory_manager(KEV_DIR)
     if "error" in response.keys():
         print(f"{THREAT_INTEL_TYPE} directory_manager error: {response["error"]}")
     elif "error" not in response.keys():
@@ -67,12 +67,12 @@ def download(app_config: dict, user_config: dict):
         sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
     
     #* Checks file age and config settings to see if files should be downloaded
-    response = utils.file_manager(AUTO_DOWNLOAD_ALL, CISA_KEV_DATA_AUTO_UPDATE, CISA_KEV_PATH)
+    response = utils.file_manager(AUTO_DOWNLOAD_ALL, KEV_DATA_AUTO_UPDATE, KEV_PATH)
     if "error" in response.keys():
         print(f"{THREAT_INTEL_TYPE} file_manager error: {response["error"]}")
     elif "error" not in response.keys():
         if response['action'] == 'download':
-            response = utils.file_download(CISA_KEV_DOWNLOAD_URL, CISA_KEV_PATH)
+            response = utils.file_download(KEV_DOWNLOAD_URL, KEV_PATH)
             print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
         elif response['action'] == 'none':
             print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
@@ -88,7 +88,7 @@ def enrich_with_kev(KEV_df: pd.DataFrame, cve_data: list) -> dict:
     ransomware campaigns or not.
 
     Args:
-        KEV_df (pd.DataFrame): Accepts a Dataframe that consists of the CISA_KEV data
+        KEV_df (pd.DataFrame): Accepts a Dataframe that consists of the KEV data
         cve_data (list): A list of CVEs to process and enrich
 
     Returns:
@@ -123,6 +123,7 @@ if __name__ == "__main__":
                 ['CVE-2015-2808', 'Modified', 5.0, 'None', 'NETWORK', 'LOW']]
     
     app_config, user_config = config.bootstrap()
+    download(app_config, user_config)
     kev_df = create_dataframe(app_config)
     report = enrich_with_kev(kev_df["data"], nvd_data)
     print(f'{report["data"]}, {report["columns"]}')

@@ -5,26 +5,26 @@ import pandas as pd
 
 from cve_parse import utils
 
-THREAT_INTEL_TYPE = 'EXPLOITDB'
+THREAT_INTEL_TYPE = 'GHDB'
 
 STATUS_ERROR = 400
 STATUS_TERMINATE = 500
 STATUS_OK = 200
 
 def download(app_config: dict, user_config: dict):
-    """ Downloads the EXPLOITDB XML file """
+    """ Downloads the GHDB XML file """
 
     AUTO_DOWNLOAD_ALL = user_config["AUTO_DOWNLOAD_ALL"]
-    EXPLOITDB_DATA_AUTO_UPDATE = user_config["EXPLOITDB_DATA_AUTO_UPDATE"]
+    GHDB_DATA_AUTO_UPDATE = user_config["GHDB_DATA_AUTO_UPDATE"]
 
-    EXPLOITDB_DOWNLOAD_URL = app_config["download_URLs"]["EXPLOITDB_DOWNLOAD_URL"]
-    EXPLOITDB_DIR=app_config["EXPLOITDB_DIR"]
-    EXPLOITDB_XML_FILE=app_config["EXPLOITDB_XML_FILE"]
+    GHDB_DOWNLOAD_URL = app_config["download_URLs"]["GHDB_DOWNLOAD_URL"]
+    GHDB_DIR=app_config["GHDB_DIR"]
+    GHDB_XML_FILE=app_config["GHDB_XML_FILE"]
     
-    EXPLOITDB_PATH=EXPLOITDB_DIR+EXPLOITDB_XML_FILE
+    GHDB_PATH=GHDB_DIR+GHDB_XML_FILE
     
     #* Checks if the directory exists and will try and create it
-    response = utils.directory_manager(EXPLOITDB_DIR)
+    response = utils.directory_manager(GHDB_DIR)
     if "error" in response.keys():
         print(f"{THREAT_INTEL_TYPE} directory_manager error: {response["error"]}")
     elif "error" not in response.keys():
@@ -33,12 +33,12 @@ def download(app_config: dict, user_config: dict):
         sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
     
     #* Checks file age and config settings to see if files should be downloaded
-    response = utils.file_manager(AUTO_DOWNLOAD_ALL, EXPLOITDB_DATA_AUTO_UPDATE, EXPLOITDB_PATH)
+    response = utils.file_manager(AUTO_DOWNLOAD_ALL, GHDB_DATA_AUTO_UPDATE, GHDB_PATH)
     if "error" in response.keys():
         print(f"{THREAT_INTEL_TYPE} file_manager error: {response["error"]}")
     elif "error" not in response.keys():
         if response['action'] == 'download':
-            response = utils.file_download(EXPLOITDB_DOWNLOAD_URL, EXPLOITDB_PATH)
+            response = utils.file_download(GHDB_DOWNLOAD_URL, GHDB_PATH)
             print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
         elif response['action'] == 'none':
             print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
@@ -49,7 +49,7 @@ def download(app_config: dict, user_config: dict):
 def create_dataframe(app_config: dict) -> dict:  
     """
     Accepts data from the application configuration and reads 
-    the EXPLOITDB_DIR and EXPLOITDB_EXCEL_FILE values. The EXPLOITDB file in Excel format
+    the GHDB_DIR and GHDB_EXCEL_FILE values. The GHDB file in Excel format
     is read and is loaded into a Pandas DataFrame for processing.
 
     Args:
@@ -59,30 +59,30 @@ def create_dataframe(app_config: dict) -> dict:
         dict: with keys: data, error (if present), message, report_columns, status (200 for ok, 400 for error, 500 for terminate)
     """
     
-    EXPLOITDB_DIR = app_config["EXPLOITDB_DIR"]
-    EXPLOITDB_EXCEL_FILE = app_config["EXPLOITDB_EXCEL_FILE"]
-    EXPLOITDB_PATH = EXPLOITDB_DIR+EXPLOITDB_EXCEL_FILE
+    GHDB_DIR = app_config["GHDB_DIR"]
+    GHDB_EXCEL_FILE = app_config["GHDB_EXCEL_FILE"]
+    GHDB_PATH = GHDB_DIR+GHDB_EXCEL_FILE
     
     try:
-        exploitdb_dataframe =  pd.read_excel(EXPLOITDB_PATH)
+        GHDB_dataframe =  pd.read_excel(GHDB_PATH)
     except Exception as e:
         sys.exit(f'Error loading KEV File: {e}')
     else:
-        message = f"Loaded {EXPLOITDB_PATH} into kev_dataframe"
-        response = {"data" : exploitdb_dataframe, "message" : message, "status" : STATUS_OK}
+        message = f"Loaded {GHDB_PATH} into kev_dataframe"
+        response = {"data" : GHDB_dataframe, "message" : message, "status" : STATUS_OK}
 
     return response
 
 
 #! Working here
-def enrich_with_exploitdb(ExploitDB_df: pd.DataFrame, cve_data: tuple) -> dict:  
+def enrich_with_ghdb(GHDB_df: pd.DataFrame, cve_data: tuple) -> dict:  
     """
-    Accepts a Pandas Dataframe that holds ExploitDB data and a tuple of the CVEs to 
-    be enriched. CVEs will be tagged as being in the ExploitDB database or not, and 
-    if a CVE is in the ExploitDB data set they will be tagged as having an exploit or not
+    Accepts a Pandas Dataframe that holds GHDB data and a tuple of the CVEs to 
+    be enriched. CVEs will be tagged as being in the GHDB database or not, and 
+    if a CVE is in the GHDB data set they will be tagged as having an exploit or not
 
     Args:
-        ExploitDB_df (pd.DataFrame): Accepts a Dataframe that consists of the CISA_KEV data
+        GHDB_df (pd.DataFrame): Accepts a Dataframe that consists of the CISA_KEV data
         cve_data (tuple): A tuple of CVEs to process and enrich
 
     Returns:
@@ -96,7 +96,7 @@ def enrich_with_exploitdb(ExploitDB_df: pd.DataFrame, cve_data: tuple) -> dict:
         
         #! The CVE columns are named differently in the various datasets
         #! Keep this in mind if you run into processing errors
-        result = ExploitDB_df.loc[ExploitDB_df["cve_id"] == cve[0]]
+        result = GHDB_df.loc[GHDB_df["cve_id"] == cve[0]]
         
         print(f"Result: {result}")
         
@@ -115,13 +115,13 @@ def enrich_with_exploitdb(ExploitDB_df: pd.DataFrame, cve_data: tuple) -> dict:
 
             
 def extract(app_config: dict):
-    """ Enrich CVE data with exploit data from ExploitDB SearchSploit """
+    """ Enrich CVE data with exploit data from GHDB SearchSploit """
     
-    print("\n***** Beginning data enrichment with ExploitDB SearchSploit data *****\n")
+    print("\n***** Beginning data enrichment with GHDB data *****\n")
     
-    searchsploit_xml_path = app_config["EXPLOITDB_DIR"]+app_config["EXPLOITDB_XML_FILE"]
-    searchsploit_excel_path = app_config["EXPLOITDB_DIR"]+app_config["EXPLOITDB_EXCEL_FILE"]
-    #! EXPLOITDB_EXCLUSION_WORDS = app_config["EXPLOITDB_EXCLUSION_WORDS"]
+    searchsploit_xml_path = app_config["GHDB_DIR"]+app_config["GHDB_XML_FILE"]
+    searchsploit_excel_path = app_config["GHDB_DIR"]+app_config["GHDB_EXCEL_FILE"]
+    #! GHDB_EXCLUSION_WORDS = app_config["GHDB_EXCLUSION_WORDS"]
     
     try:
         print(f"Attempting to process: {searchsploit_xml_path}")    
@@ -129,19 +129,19 @@ def extract(app_config: dict):
         filtered_searchsploit_df = searchsploit_df[["id","link","edb","textualDescription"]]
 
         #! Print out complete XML database to an Excel file
-        filtered_searchsploit_df.to_excel("./data/exploitdb/ghdb_total.xlsx", index=False)
+        filtered_searchsploit_df.to_excel("./data/ghdb/ghdb_total.xlsx", index=False)
         
         searchsploit_cve_with_dorks_df = filtered_searchsploit_df[filtered_searchsploit_df["textualDescription"].str.contains('CVE:')]
         searchsploit_cve_with_dorks_df = searchsploit_cve_with_dorks_df.dropna()
         
-        #! for word in EXPLOITDB_EXCLUSION_WORDS:
+        #! for word in GHDB_EXCLUSION_WORDS:
         #     searchsploit_cve_with_dorks_df = searchsploit_cve_with_dorks_df[~searchsploit_cve_with_dorks_df["textualDescription"].str.contains(word)]
 
         searchsploit_cve_with_dorks_df["cve_id"] = searchsploit_cve_with_dorks_df["textualDescription"].apply(filter_cve)
         searchsploit_cve_only_df = searchsploit_cve_with_dorks_df.drop('textualDescription', axis=1)
 
     except Exception as e:
-        sys.exit(f"Unable to process ExploitDB file with error: {e}")
+        sys.exit(f"Unable to process GHDB file with error: {e}")
     else:
         print(f"Extracted all CVE data from file: {searchsploit_xml_path}")
         try:
@@ -152,14 +152,15 @@ def extract(app_config: dict):
             print(f"Excel file written to: {searchsploit_excel_path}")
 
 
-def filter_cve(EXPLOITDB_string: str):
-    """ Use for the EXPLOITDB_cve_extract() """
-    """ Used to filter string data from textualDescription from ExploitDB data """
+def filter_cve(GHDB_string: str):
+    """ Use for the GHDB_cve_extract() """
+    """ Used to filter string data from textualDescription from GHDB data """
     
-    EXPLOITDB_string = EXPLOITDB_string.replace('CVE-','CVE:')
-    EXPLOITDB_string = EXPLOITDB_string.replace('CVE-CVE-','CVE-')
+    GHDB_string = GHDB_string.replace('CVE-','CVE:')
+    GHDB_string = GHDB_string.replace('CVE-CVE-','CVE-')
 
-    dash_match = re.search(r"CVE-\d{4}-\d{4,7}", EXPLOITDB_string)
+    # dash_match = re.search(r"CVE-\d{4}-\d{4,7}", GHDB_string)
+    dash_match = re.search(r"\d{4}-\d{4,7}", GHDB_string)
     cve_id = dash_match.group()
     
 
@@ -177,8 +178,8 @@ if __name__ == "__main__":
     download(app_config, user_config)
     extract(app_config)
     response = create_dataframe(app_config)
-    exploitdb_df = response["data"]
+    GHDB_df = response["data"]
     #! link = link to the database article
     #! ebd = link to the exploit
     
-    enrich_with_exploitdb(exploitdb_df, unique_cves)
+    # enrich_with_exploitdb(GHDB_df, unique_cves)

@@ -1,8 +1,8 @@
 {
     "AUTO_DOWNLOAD_ALL": "True",
     "EPSS_DATA_AUTO_UPDATE": "True",
-    "EXPLOITDB_DATA_AUTO_UPDATE": "True",
-    "CISA_KEV_DATA_AUTO_UPDATE": "True",
+    "GHDB_DATA_AUTO_UPDATE": "True",
+    "KEV_DATA_AUTO_UPDATE": "True",
     "NOMI_DATA_AUTO_UPDATE": "True",
     "NVD_DATA_AUTO_UPDATE": "True",
     "USE_NVD_API": "False",

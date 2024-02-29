@@ -33,7 +33,7 @@ def excel(user_config: dict, cve_report: list):
     
     try:
         cve_df = pd.DataFrame(cve_report, columns=columns)
-        cve_df.to_excel(file_path)
+        cve_df.to_excel(file_path, index=False)
     except Exception as e:
         sys.exit(f"Error in write report processing Excel file: {e}")
     else:
