@@ -144,7 +144,7 @@ def write_file(app_config: dict, nomi_data: list) -> dict:
     nomi_df = pd.DataFrame(nomi_data)
 
     try:
-        nomi_df.to_excel(NOMI_FILE_PATH)
+        nomi_df.to_excel(NOMI_FILE_PATH, index=False)
     except Exception as e:
         message = f"Error writing file: {NOMI_FILE_PATH}, the error was: {e}"
         response = {

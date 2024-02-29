@@ -138,7 +138,7 @@ def out_of_date(FILE_PATH: str) -> dict:
         current_date = current_date.strftime('%B, %d, %Y')
         
         if modified_date == current_date:
-            print(f"out_of_date() if modified is current date {file_path}")
+            # print(f"out_of_date() if modified is current date {file_path}")
             message = f"{FILE_PATH} modified {modified_date}, not download"
             response = {"action" : ACTIONS["none"], "message" : message, "status": STATUS_OK}
             return response

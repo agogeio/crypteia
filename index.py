@@ -28,13 +28,19 @@ if __name__ == "__main__":
     nvd_data = nvd.nvd_controller(app_config, user_config ,unique_cves_tuple)
     #* Capture the returned KEV Dataframe
     kev_dataframe = kev.create_dataframe(app_config)
+    kev_dataframe = kev_dataframe["data"]
     #* Update the vulnerability report with KEV data
     kev_report = kev.enrich_with_kev(kev_dataframe, nvd_data)
     #* In the write report file there is also an option to write a csv file
     exploitdb_response = exploitdb.create_dataframe(app_config)
     exploitdb_df = exploitdb_response["data"]
     
-    print(exploitdb_df)
+    print(unique_cves_tuple)
+    
+    # exploitdb.enrich_with_exploitdb(exploitdb_df, unique_cves_tuple)
+    
+    
+    
     
     # excel_file_path = write_report.excel(user_config, kev_report)
 
