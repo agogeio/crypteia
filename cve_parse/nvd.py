@@ -78,7 +78,6 @@ def check_missing_files(nvd_file_paths) -> dict:
     status = ""
     
     for nvd_file_path in nvd_file_paths:
-        
         try:
             if not os.path.exists(nvd_file_path):
                 print(f"Not Found: {nvd_file_path}")
@@ -88,9 +87,7 @@ def check_missing_files(nvd_file_paths) -> dict:
         else:
             nvd_missing_files.append(nvd_file_path)
             status = STATUS_OK
-        
     data = nvd_missing_files
-    
     response = {"data": data, "error": error, "message": "Missing NVD files analyzed", "status": status }
     return response
 
@@ -136,29 +133,22 @@ def download(app_config: dict, user_config: dict) -> dict:
 
         nvd_download_data.append(nvd_data)
 
-        for data in nvd_download_data:
-                
-            #* Checks file age and config settings to see if files should be downloaded
-            response = utils.file_manager(AUTO_DOWNLOAD_ALL, NVD_DATA_AUTO_UPDATE, data["nvd_file_path"])
-            if "error" in response.keys():
-                print(f"{response["error"]}")
-            elif "error" not in response.keys():
-                if response['action'] == 'download':
-                    response = utils.file_download(data["nvd_url"], data["nvd_gz_file_path"])
-                    utils.un_gzip(data["nvd_gz_file_path"], data["nvd_file_path"])
-                    print(f"{response['message']}")
-                    merge = True
-                elif response['action'] == 'none':
-                    print(f"{response['message']}")
-            else:
-                sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
+    for data in nvd_download_data:
+        #* Checks file age and config settings to see if files should be downloaded
+        response = utils.file_manager(AUTO_DOWNLOAD_ALL, NVD_DATA_AUTO_UPDATE, data["nvd_file_path"])
+        if "error" in response.keys():
+            print(f"{response["error"]}")
+        elif "error" not in response.keys():
+            if response['action'] == 'download':
+                response = utils.file_download(data["nvd_url"], data["nvd_gz_file_path"])
+                utils.un_gzip(data["nvd_gz_file_path"], data["nvd_file_path"])
+                print(f"{response['message']}")
+                merge = True
+            elif response['action'] == 'none':
+                print(f"{response['message']}")
+        else:
+            sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
 
-        
-        
-
-            
-        
-    
     #! I don't love this, need to put merge on it's own        
     if merge == True: filter_and_merge(app_config)
 
@@ -170,8 +160,10 @@ def extract_cvss_data(nvd_data: pd.DataFrame) -> dict:
     
     keys = nvd_data.keys()
     cvss_data = {}
+    cvss_version = ""
     
     if "cvssV2" in keys:
+        cvss_version = "cvssV2"
         cvss_data["version"] = nvd_data["cvssV2"]["version"]
         cvss_data["baseScore"] = nvd_data["cvssV2"]["baseScore"]
         cvss_data["baseSeverity"] = nvd_data["severity"]
@@ -180,6 +172,7 @@ def extract_cvss_data(nvd_data: pd.DataFrame) -> dict:
         cvss_data["vectorString"] = nvd_data["cvssV2"]["vectorString"]
         
     elif "cvssV3" in keys:
+        cvss_version = "cvssV3"
         cvss_data["version"] = nvd_data["cvssV3"]["version"]
         cvss_data["baseScore"] = nvd_data["cvssV3"]["baseScore"]
         cvss_data["baseSeverity"] = nvd_data["cvssV3"]["baseSeverity"]
@@ -187,6 +180,11 @@ def extract_cvss_data(nvd_data: pd.DataFrame) -> dict:
         cvss_data["attackComplexity"] = nvd_data["cvssV3"]["attackComplexity"]
         cvss_data["vectorString"] = nvd_data["cvssV3"]["vectorString"]
 
+    #! Setup for web use
+    # message = f"The CVSS version is {cvss_version}"
+    # status = STATUS_OK
+    # response = {"data": cvss_data, "message": message, "status": status }
+    
     return cvss_data
 
 
@@ -407,13 +405,9 @@ def process_local(unique_cves: tuple, nvd_df: pd.DataFrame) -> list:
     cve_list = []
     
     for cve in unique_cves:
-        
-        print(f"\nProcessing CVE: {cve}")
-
+        # print(f"\nProcessing CVE: {cve}")
         cve_record = nvd_df.loc[nvd_df['ID'] == cve]
-        
-
-                
+         
         if len(cve_record) < 1:
             print(f"Invalid CVE record submitted: {cve}")
         elif len(cve_record) == 1:
@@ -474,7 +468,6 @@ def process_local(unique_cves: tuple, nvd_df: pd.DataFrame) -> list:
                 cve_list.append([cve, vulnStatus, baseScore, baseSeverity, attackVector, attackComplexity, vectorString])
 
     return cve_list
-
 
 
 

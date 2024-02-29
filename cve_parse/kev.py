@@ -11,43 +11,7 @@ STATUS_ERROR = 400
 STATUS_TERMINATE = 500
 STATUS_OK = 200
 
-def enrich_with_kev(KEV_df: pd.DataFrame, cve_data: list) -> dict:  
-    """
-    Accepts a Pandas Dataframe that holds CISA KEV data and a list of the CVEs to 
-    be enriched. CVEs will be tagged as being in the CISA KEV database or not, and 
-    if a CVE is in the CISA KEV database they will be tagged as being using in 
-    ransomware campaigns or not.
-
-    Args:
-        KEV_df (pd.DataFrame): Accepts a Dataframe that consists of the CISA_KEV data
-        cve_data (list): A list of CVEs to process and enrich
-
-    Returns:
-        dict: with keys: data, error (if present), message, report_columns, status (200 for ok, 400 for error, 500 for terminate)
-    """
-    
-    # STATUS_ERROR = app_config["STATUS_CODES"]["STATUS_ERROR"]
-    # STATUS_TERMINATE = app_config["STATUS_CODES"]["STATUS_TERMINATE"]
-    # STATUS_OK = app_config["STATUS_CODES"]["STATUS_OK"]
-    
-    cves = cve_data
-    for cve in cves:
-        result = KEV_df.loc[KEV_df["cveID"] == cve[0]]
-        if len(result.values) == 0:
-            cve.append("Not in KEV")
-            cve.append("Not in KEV")
-        else:
-            ransomwareUse = result["knownRansomwareCampaignUse"].values
-            cve.append("In KEV")
-            cve.append(ransomwareUse[0])
-
-    columns = ["isKEV", "knownRansomwareCampaignUse"]
-    message = f"{len(cves)} unique CVEs processed"
-    response = {"data": cves, "message": message, "columns": columns, "status": STATUS_OK}
-    return response
-
-
-def create_dataframe(app_config: dict):
+def create_dataframe(app_config: dict) -> dict:
     """
     Accepts data from the application configuration and reads 
     the CISA_KEV_DIR and CISA_KEV_FILE values. The KEV file in JSON format
@@ -114,6 +78,38 @@ def download(app_config: dict, user_config: dict):
             print(f"{THREAT_INTEL_TYPE} file_download message: {response['message']}")
     else:
         sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
+
+
+def enrich_with_kev(KEV_df: pd.DataFrame, cve_data: list) -> dict:  
+    """
+    Accepts a Pandas Dataframe that holds CISA KEV data and a list of the CVEs to 
+    be enriched. CVEs will be tagged as being in the CISA KEV database or not, and 
+    if a CVE is in the CISA KEV database they will be tagged as being using in 
+    ransomware campaigns or not.
+
+    Args:
+        KEV_df (pd.DataFrame): Accepts a Dataframe that consists of the CISA_KEV data
+        cve_data (list): A list of CVEs to process and enrich
+
+    Returns:
+        dict: with keys: data, error (if present), message, report_columns, status (200 for ok, 400 for error, 500 for terminate)
+    """
+    
+    cves = cve_data
+    for cve in cves:
+        result = KEV_df.loc[KEV_df["cveID"] == cve[0]]
+        if len(result.values) == 0:
+            cve.append("Not in KEV")
+            cve.append("Not in KEV")
+        else:
+            ransomwareUse = result["knownRansomwareCampaignUse"].values
+            cve.append("In KEV")
+            cve.append(ransomwareUse[0])
+
+    columns = ["isKEV", "knownRansomwareCampaignUse"]
+    message = f"{len(cves)} unique CVEs processed"
+    response = {"data": cves, "message": message, "columns": columns, "status": STATUS_OK}
+    return response
 
 
 if __name__ == "__main__":

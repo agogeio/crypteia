@@ -31,7 +31,12 @@ if __name__ == "__main__":
     #* Update the vulnerability report with KEV data
     kev_report = kev.enrich_with_kev(kev_dataframe, nvd_data)
     #* In the write report file there is also an option to write a csv file
-    excel_file_path = write_report.excel(user_config, kev_report)
+    exploitdb_response = exploitdb.create_dataframe(app_config)
+    exploitdb_df = exploitdb_response["data"]
+    
+    print(exploitdb_df)
+    
+    # excel_file_path = write_report.excel(user_config, kev_report)
 
     print(f"\nTotal Processing Time: {round((time.time() - start)/60, 2)} minutes")
     

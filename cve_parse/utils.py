@@ -72,6 +72,52 @@ def file_download(URL: str, DATA_FILE_PATH: str) -> dict:
         return response
 
 
+def file_manager(AUTO_DOWNLOAD_ALL: str, DATA_AUTO_UPDATE: str, DATA_FILE_PATH: str) -> dict:
+    """
+    File accepts a file path. If the file is missing it will check the 
+    user_config.js file for AUTO_DOWNLOAD_ALL and DATA_AUTO_UPDATE in the 
+    user_config.json file and try to download file.
+    
+    If AUTO_DOWNLOAD_ALL and DATA_AUTO_UPDATE are both set to false, you can end up with a 
+    situation where files are missing and the program must terminate.
+
+    Args:
+        AUTO_DOWNLOAD_ALL (str): Defines if datasets will automatically be downloaded if missing, set in the user_config.json file
+        DATA_AUTO_UPDATE (str): Defines if datasets will automatically be updated, set in the user_config.json file
+        DATA_FILE_PATH (str): If the location of the file to validate
+
+    Returns:
+        dict: with keys: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
+    """
+    
+    DATA_FILE_PATH = pathlib.Path(DATA_FILE_PATH)
+    
+    print(f"Validating File: {DATA_FILE_PATH}")
+    
+    #* FILE DOES NOT EXIST:    
+    if not pathlib.Path(DATA_FILE_PATH).is_file():
+        #*  FILE DOES NOT EXIST AND AUTO DOWNLOAD SET TO TRUE - SYSTEM CAN CONTINUE TO RUN
+        if AUTO_DOWNLOAD_ALL == "True":
+            message = f"{DATA_FILE_PATH} not found. AUTO_DOWNLOAD_ALL set to 'True' in user_config.json, download"
+            response = {"action": ACTIONS["download"], "message": message, "status": STATUS_OK}
+            return response
+        #*  FILE DOES NOT EXIST AND AUTO DOWNLOAD SET TO FALSE - SYSTEM WILL BE MISSING FILES, CANNOT CONTINUE TO RUN
+        elif AUTO_DOWNLOAD_ALL == "False":
+            message = f"{DATA_FILE_PATH} not found. AUTO_DOWNLOAD_ALL set to 'False' in user_config.json, processing terminated"
+            response = {"action": ACTIONS["terminate"], "message": message, "status": STATUS_TERMINATE}
+            return response
+    #* FILE DOES EXIST:
+    elif pathlib.Path(DATA_FILE_PATH).is_file():
+        #* If FILE DOES EXIST AND AUTO UPDATE IS TRUE!
+        if DATA_AUTO_UPDATE == "True":
+            response = out_of_date(DATA_FILE_PATH)
+            return response
+        elif DATA_AUTO_UPDATE == "False":
+            message = f"{DATA_FILE_PATH} found, data DATA_AUTO_UPDATE set to 'False' in user_config.json, no download"
+            response = { "action": ACTIONS["none"], "message": message, "status": STATUS_OK}
+            return response
+        
+
 def out_of_date(FILE_PATH: str) -> dict:
     """
     Checks the modified data of the file on disk, if the file was not 
@@ -108,54 +154,6 @@ def out_of_date(FILE_PATH: str) -> dict:
         return response
 
 
-def file_manager(AUTO_DOWNLOAD_ALL: str, DATA_AUTO_UPDATE: str, DATA_FILE_PATH: str) -> dict:
-    """
-    File accepts a file path. If the file is missing it will check the 
-    user_config.js file for AUTO_DOWNLOAD_ALL and DATA_AUTO_UPDATE in the 
-    user_config.json file and try to download file.
-    
-    If AUTO_DOWNLOAD_ALL and DATA_AUTO_UPDATE are both set to false, you can end up with a 
-    situation where files are missing and the program must terminate.
-
-    Args:
-        AUTO_DOWNLOAD_ALL (str): Defines if datasets will automatically be downloaded if missing, set in the user_config.json file
-        DATA_AUTO_UPDATE (str): Defines if datasets will automatically be updated, set in the user_config.json file
-        DATA_FILE_PATH (str): If the location of the file to validate
-
-    Returns:
-        dict: with keys: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
-    """
-    
-    DATA_FILE_PATH = pathlib.Path(DATA_FILE_PATH)
-    
-    print(f"Validating File: {DATA_FILE_PATH}")
-     
-    #* FILE DOES EXIST:
-    if pathlib.Path(DATA_FILE_PATH).is_file():
-        print(F"file_manager() does exist {DATA_FILE_PATH}")
-        #* If FILE DOES EXIST AND AUTO UPDATE IS TRUE!
-        if DATA_AUTO_UPDATE == "True":
-            response = out_of_date(DATA_FILE_PATH)
-            return response
-        elif DATA_AUTO_UPDATE == "False":
-            message = f"{DATA_FILE_PATH} found, data DATA_AUTO_UPDATE set to 'False' in user_config.json, no download"
-            response = { "action": ACTIONS["none"], "message": message, "status": STATUS_OK}
-            return response
-        
-    #* FILE DOES NOT EXIST:    
-    if not pathlib.Path(DATA_FILE_PATH).is_file():
-        #*  FILE DOES NOT EXIST AND AUTO DOWNLOAD SET TO TRUE - SYSTEM CAN CONTINUE TO RUN
-        if AUTO_DOWNLOAD_ALL == "True":
-            message = f"{DATA_FILE_PATH} not found. AUTO_DOWNLOAD_ALL set to 'True' in user_config.json, download"
-            response = {"action": ACTIONS["download"], "message": message, "status": STATUS_OK}
-            return response
-        #*  FILE DOES NOT EXIST AND AUTO DOWNLOAD SET TO FALSE - SYSTEM WILL BE MISSING FILES, CANNOT CONTINUE TO RUN
-        elif AUTO_DOWNLOAD_ALL == "False":
-            message = f"{DATA_FILE_PATH} not found. AUTO_DOWNLOAD_ALL set to 'False' in user_config.json, processing terminated"
-            response = {"action": ACTIONS["terminate"], "message": message, "status": STATUS_TERMINATE}
-            return response
-
-
 def un_gzip(gz_file_path: str , file_path: str) -> dict:
     """
     General utility to un_gzip downloaded files
@@ -184,3 +182,24 @@ def un_gzip(gz_file_path: str , file_path: str) -> dict:
 if __name__ == "__main__":
     import config
     app_config, user_config = config.bootstrap()
+
+    NVD_DATA_DIR = app_config["NVD_DATA_DIR"]
+    NVD_DATA_FILES = app_config["NVD_DATA_FILES"]
+    
+    for NVD_DATA_FILE in NVD_DATA_FILES:
+        response = file_manager("True", "True", f"{NVD_DATA_DIR+NVD_DATA_FILE}")
+        
+        if "error" in response.keys():
+                print(f"{response["error"]}")
+        elif "error" not in response.keys():
+                
+            if response['action'] == 'download':
+                # response = file_download(data["nvd_url"], data["nvd_gz_file_path"])
+                # un_gzip(data["nvd_gz_file_path"], data["nvd_file_path"])
+                print(f"{response['message']}")
+                # merge = True
+                
+            elif response['action'] == 'none':
+                print(f"{response['message']}")
+        else:
+            print(f"Unknown response from the directory_manager, terminating job. Please check your configuration settings.")
