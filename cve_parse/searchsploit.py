@@ -124,6 +124,9 @@ def search(searchsploit_df: pd.DataFrame, unique_cves: list) -> dict:
         }
     """
     
+    #* .sort() is an in place method
+    unique_cves.sort()
+    
     columns = ['isSearchSploit', 'description', 'type', 'platform', 'codes']
     searchsploit_record = {}
     data = []
@@ -236,17 +239,20 @@ def transform(app_config: dict) -> dict:
        
 if __name__ == "__main__":
     import  config
-    
-    unique_cves = ['CVE-2021-25155', 'CVE-2016-2183', 'CVE-2023-23375', 'CVE-2023-28304', 'CVE-2020-11022', 'CVE-2020-11023', 'CVE-2022-31777', 'CVE-1999-0113', 'CVE-2005-2232', 'CVE-2017-8835']
-    
     app_config, user_config = config.bootstrap()
+    #! Used for testing
+    unique_cves = app_config["TEST_CVES"]
+    
     # response = download(app_config, user_config)
     # response = transform(app_config)
     response = load(app_config)
     searchsploit_df = response["data"]
     response = search(searchsploit_df, unique_cves)
+    
+    i = 1
     for row in response["data"]:
-        print(row)
+        print(f"{i} {row}")
+        i = i+1 
 
 
     

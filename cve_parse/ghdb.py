@@ -46,7 +46,7 @@ def download(app_config: dict, user_config: dict):
         sys.exit(f"Unknown response from the {THREAT_INTEL_TYPE} directory_manager, terminating job. Please check your configuration settings.")
 
 
-def create_dataframe(app_config: dict) -> dict:  
+def load(app_config: dict) -> dict:  
     """
     Accepts data from the application configuration and reads 
     the GHDB_DIR and GHDB_EXCEL_FILE values. The GHDB file in Excel format
@@ -74,31 +74,31 @@ def create_dataframe(app_config: dict) -> dict:
     return response
 
 
-#! Working here
-def enrich_with_ghdb(GHDB_df: pd.DataFrame, cve_data: tuple) -> dict:  
+def search(ghdb_df: pd.DataFrame, unique_cves: list) -> dict:  
     """
-    Accepts a Pandas Dataframe that holds GHDB data and a tuple of the CVEs to 
+    Accepts a Pandas Dataframe that holds GHDB data and a list of the CVEs to 
     be enriched. CVEs will be tagged as being in the GHDB database or not, and 
     if a CVE is in the GHDB data set they will be tagged as having an exploit or not
 
     Args:
         GHDB_df (pd.DataFrame): Accepts a Dataframe that consists of the CISA_KEV data
-        cve_data (tuple): A tuple of CVEs to process and enrich
+        unique_cves (list): A list of CVEs to process and enrich
 
     Returns:
         dict: with keys: data, error (if present), message, report_columns, status (200 for ok, 400 for error, 500 for terminate)
     """
     
-    cves = cve_data
-    for cve in cves:
+    #* .sort() is an in place method
+    unique_cves.sort()
+    
+    for cve in unique_cves:
+        matches = ghdb_df["cve_id"].str.contains(cve, case=False)
+        index = ghdb_df.index[matches]
+        index = index.to_list()
+
+        if len(index) > 0:
+            print(ghdb_df.iloc[index])
         
-        print(f"CVE {cve}")
-        
-        #! The CVE columns are named differently in the various datasets
-        #! Keep this in mind if you run into processing errors
-        result = GHDB_df.loc[GHDB_df["cve_id"] == cve[0]]
-        
-        print(f"Result: {result}")
         
     #     if len(result.values) == 0:
     #         cve.append("Not in ExploitDB")
@@ -114,7 +114,7 @@ def enrich_with_ghdb(GHDB_df: pd.DataFrame, cve_data: tuple) -> dict:
     # return response
 
             
-def extract(app_config: dict):
+def transform(app_config: dict):
     """ Enrich CVE data with exploit data from GHDB SearchSploit """
     
     print("\n***** Beginning data enrichment with GHDB data *****\n")
@@ -151,35 +151,37 @@ def extract(app_config: dict):
         else:
             print(f"Excel file written to: {searchsploit_excel_path}")
 
+#! For use with the transform function to filter CVE data
+def filter_cve(GHDB_string: str) -> str:
+    """
+    Used with the ghdb transform function to filter CVE data
 
-def filter_cve(GHDB_string: str):
-    """ Use for the GHDB_cve_extract() """
-    """ Used to filter string data from textualDescription from GHDB data """
+    Args:
+        GHDB_string (str): The string that contains CVE data 
+
+    Returns:
+        str: The identified CVE
+    """
     
-    GHDB_string = GHDB_string.replace('CVE-','CVE:')
+    GHDB_string = GHDB_string.replace('CVE: ','CVE-')
     GHDB_string = GHDB_string.replace('CVE-CVE-','CVE-')
-
-    # dash_match = re.search(r"CVE-\d{4}-\d{4,7}", GHDB_string)
-    dash_match = re.search(r"\d{4}-\d{4,7}", GHDB_string)
+    dash_match = re.search(r"CVE-\d{4}-\d{4,7}", GHDB_string)
     cve_id = dash_match.group()
-    
-
-    
     return cve_id
 
           
 if __name__ == "__main__":
-    #! Credit to https://github.com/nomi-sec/PoC-in-GitHub/
     import config
     app_config, user_config = config.bootstrap()
+    #! Used for testing
+    unique_cves = app_config["TEST_CVES"]
     
-    unique_cves = ('CVE-2016-2183', 'CVE-2023-23375', 'CVE-2023-28304', 'CVE-2020-11022', 'CVE-2020-11023', 'CVE-2022-31777')
+    # download(app_config, user_config)
+    # transform(app_config)
+    response = load(app_config)
+    ghdb_df = response["data"]
+    search(ghdb_df, unique_cves)
     
-    download(app_config, user_config)
-    extract(app_config)
-    response = create_dataframe(app_config)
-    GHDB_df = response["data"]
+    
     #! link = link to the database article
     #! ebd = link to the exploit
-    
-    # enrich_with_exploitdb(GHDB_df, unique_cves)

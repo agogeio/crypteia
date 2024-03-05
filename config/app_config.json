@@ -96,5 +96,7 @@
     "SEARCHSPLOIT_CSV_FILE" : "files_exploits.csv",
     "SEARCHSPLOIT_EXCEL_FILE" : "files_exploits.xlsx",
 
-    "BASE_REPORT_COLUMNS": ["cveID", "vulnStatus", "baseScore", "baseSeverity", "attackVector", "accessComplexity", "vectorString"]
+    "BASE_REPORT_COLUMNS": ["cveID", "vulnStatus", "baseScore", "baseSeverity", "attackVector", "accessComplexity", "vectorString"],
+
+    "TEST_CVES": ["CVE-2021-25155", "CVE-2016-2183", "CVE-2023-23375", "CVE-2023-28304", "CVE-2020-11022", "CVE-2020-11023", "CVE-2022-31777", "CVE-1999-0113", "CVE-2005-2232", "CVE-2017-8835", "CVE-2008-2338", "CVE-2010-2696", "CVE-2010-0691"]
 }
