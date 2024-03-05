@@ -5,6 +5,7 @@
     "KEV_DATA_AUTO_UPDATE": "True",
     "NOMI_DATA_AUTO_UPDATE": "True",
     "NVD_DATA_AUTO_UPDATE": "True",
+    "SEARCHSPLOIT_DATA_AUTO_UPDATE": "True",
     "USE_NVD_API": "False",
     "USE_NVD_LOCAL": "True",
     "USER_VULNERABILITY_IMPORT_REPORT_DIR": "./import/",

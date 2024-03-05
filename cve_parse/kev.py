@@ -44,7 +44,22 @@ def create_dataframe(app_config: dict) -> dict:
 
 
 def download(app_config: dict, user_config: dict):
-    """ Downloads the KEV JSON file """
+    """
+    Downloads the CISA KEV dataset 
+    user_config.js file for AUTO_DOWNLOAD_ALL and DATA_AUTO_UPDATE in the 
+    user_config.json file and try to download file.
+    
+    If AUTO_DOWNLOAD_ALL and DATA_AUTO_UPDATE are both set to false, you can end up with a 
+    situation where files are missing and the program must terminate.
+
+    Args:
+        AUTO_DOWNLOAD_ALL (str): Defines if datasets will automatically be downloaded if missing, set in the user_config.json file
+        DATA_AUTO_UPDATE (str): Defines if datasets will automatically be updated, set in the user_config.json file
+        DATA_FILE_PATH (str): If the location of the file to validate
+
+    Returns:
+        dict: with keys: action, error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
+    """
     
     print("\n***** Beginning processing of CISA KEV files *****\n")
     

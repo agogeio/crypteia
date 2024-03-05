@@ -23,9 +23,9 @@ def create_dataframe(app_config: dict) -> pd.DataFrame:
     
     print("\n***** Using local Nomi file to load into DataFrame *****\n")
     
-    NOMI_DATA_DIR = app_config["NOMI_DATA_DIR"]
+    NOMI_DIR = app_config["NOMI_DIR"]
     NOMI_DATA_FILE = app_config["NOMI_DATA_FILE"]
-    NOMI_FILE_PATH = NOMI_DATA_DIR+NOMI_DATA_FILE
+    NOMI_FILE_PATH = NOMI_DIR+NOMI_DATA_FILE
     
     try:
         nomi_df = pd.read_excel(NOMI_FILE_PATH, usecols=["cve", "url"])
@@ -89,10 +89,6 @@ def load_from_github(app_config: dict) -> list:
     return cve_poc_data
 
 
-def lookup(nomi_df: pd.DataFrame, cves: list) -> dict:
-    pass
-
-
 def download(app_config: dict, user_config: dict) -> str:
     """  The update controller processes app and user settings, and will make sure data files are updated once per day """
     
@@ -101,13 +97,13 @@ def download(app_config: dict, user_config: dict) -> str:
     AUTO_DOWNLOAD_ALL = user_config["AUTO_DOWNLOAD_ALL"]
     NOMI_DATA_AUTO_UPDATE = user_config["NOMI_DATA_AUTO_UPDATE"]
     
-    NOMI_DATA_DIR = app_config["NOMI_DATA_DIR"]
+    NOMI_DIR = app_config["NOMI_DIR"]
     NOMI_DATA_FILE = app_config["NOMI_DATA_FILE"]
     
-    NOMI_FILE_PATH = NOMI_DATA_DIR+NOMI_DATA_FILE
+    NOMI_FILE_PATH = NOMI_DIR+NOMI_DATA_FILE
     
     #* Checks if the directory exists and will try and create it
-    response = utils.directory_manager(NOMI_DATA_DIR)
+    response = utils.directory_manager(NOMI_DIR)
     if "error" in response.keys():
         print(f"{THREAT_INTEL_TYPE} directory_manager error: {response["error"]}")
     elif "error" not in response.keys():
@@ -137,9 +133,9 @@ def write_file(app_config: dict, nomi_data: list) -> dict:
     
     print("\n***** Writing the Nomi CVE PoC date to a file *****\n")
     
-    NOMI_DATA_DIR = app_config["NOMI_DATA_DIR"]
+    NOMI_DIR = app_config["NOMI_DIR"]
     NOMI_DATA_FILE = app_config["NOMI_DATA_FILE"]
-    NOMI_FILE_PATH = NOMI_DATA_DIR+NOMI_DATA_FILE
+    NOMI_FILE_PATH = NOMI_DIR+NOMI_DATA_FILE
     
     nomi_df = pd.DataFrame(nomi_data)
 
