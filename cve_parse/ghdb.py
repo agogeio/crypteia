@@ -11,7 +11,7 @@ STATUS_ERROR = 400
 STATUS_TERMINATE = 500
 STATUS_OK = 200
 
-def download(app_config: dict, user_config: dict):
+def download(app_config: dict, user_config: dict)  :
     """ Downloads the GHDB XML file """
 
     AUTO_DOWNLOAD_ALL = user_config["AUTO_DOWNLOAD_ALL"]
@@ -88,30 +88,38 @@ def search(ghdb_df: pd.DataFrame, unique_cves: list) -> dict:
         dict: with keys: data, error (if present), message, report_columns, status (200 for ok, 400 for error, 500 for terminate)
     """
     
+    data = []
     #* .sort() is an in place method
     unique_cves.sort()
     
-    for cve in unique_cves:
-        matches = ghdb_df["cve_id"].str.contains(cve, case=False)
-        index = ghdb_df.index[matches]
-        index = index.to_list()
+    try:
+        for cve in unique_cves:
+            matches = ghdb_df["cve_id"].str.contains(cve, case=False)
+            index = ghdb_df.index[matches]
+            index = index.to_list()
 
-        if len(index) > 0:
-            print(ghdb_df.iloc[index])
-        
-        
-    #     if len(result.values) == 0:
-    #         cve.append("Not in ExploitDB")
-    #         cve.append("Not in ExploitDB")
-    #     else:
-    #         ransomwareUse = result["knownRansomwareCampaignUse"].values
-    #         cve.append("In KEV")
-    #         cve.append(ransomwareUse[0])
-
-    # columns = ["isKEV", "knownRansomwareCampaignUse"]
-    # message = f"{len(cves)} unique CVEs processed"
-    # response = {"data": cves, "message": message, "columns": columns, "status": STATUS_OK}
-    # return response
+            if len(index) > 0:
+                record = ghdb_df.iloc[index]
+                ghdb_record = {
+                        "cve": cve,
+                        "isGHDB" : "Yes",
+                        "link" : record['link'].to_list()[0],
+                        "edb" : record['edb'].to_list()[0],
+                    }
+                data.append(ghdb_record)
+            else:
+                ghdb_record = {
+                    "cve": cve,
+                    "isGHDB" : "No",
+                    "description" : "N/A",
+                    "type" : "N/A",
+                }
+                data.append(ghdb_record)
+                
+    except Exception as e:
+        return {"error": e, "message" : f"GHDB query error: {e}", "status" : STATUS_ERROR}
+    else:
+        return {"data": data, "message" : f"GHDB query complete", "status" : STATUS_OK}
 
             
 def transform(app_config: dict):
