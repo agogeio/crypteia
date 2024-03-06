@@ -11,8 +11,21 @@ STATUS_ERROR = 400
 STATUS_TERMINATE = 500
 STATUS_OK = 200
 
-def download(app_config: dict, user_config: dict)  :
-    """ Downloads the GHDB XML file """
+
+#! Need to fix response type
+def download(app_config: dict, user_config: dict)  -> dict:
+    """
+    Downloads the Google Hacking dataset from their GitLab repo at https://gitlab.com/exploit-database/exploitdb
+    If AUTO_DOWNLOAD_ALL and DATA_AUTO_UPDATE are both set to false, you can end up 
+    with a situation where files are missing and the program must terminate.
+
+    Args:
+        app_config (dict):  To access config data in the app_config.json file
+        user_config (dict): To access config data in the user_config.json file
+
+    Returns:
+        dict: with keys: error (if present), message, status (200 for ok, 400 for error, 500 for terminate)
+    """
 
     AUTO_DOWNLOAD_ALL = user_config["AUTO_DOWNLOAD_ALL"]
     GHDB_DATA_AUTO_UPDATE = user_config["GHDB_DATA_AUTO_UPDATE"]
