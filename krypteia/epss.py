@@ -1,6 +1,6 @@
 import sys
 
-from cve_parse import utils
+from krypteia import utils
 
 THREAT_INTEL_TYPE = 'EPSS'
 

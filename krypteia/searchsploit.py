@@ -2,7 +2,7 @@ import csv
 
 import pandas as pd
 
-from cve_parse import utils
+from krypteia import utils
 
 THREAT_INTEL_TYPE = 'SEARCHSPLOIT'
 

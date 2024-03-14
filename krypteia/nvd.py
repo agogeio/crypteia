@@ -6,7 +6,7 @@ import requests
 import sys
 import time
 
-from cve_parse import utils
+from krypteia import utils
 
 NVD_API_KEY = os.environ.get("NVD_API_KEY")
 

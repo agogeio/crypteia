@@ -1,6 +1,6 @@
 import time
 
-from cve_parse import *
+from krypteia import *
 
 if __name__ == "__main__":
     start = time.time()
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     print(f"\nTotal Download Time: {round((time.time() - start)/60, 2)} minutes")
     
     #* Extract required data from exploit DB
-    ghdb.extract(app_config)
+    ghdb.transform(app_config)
     #* Extract unique CVEs from provided vulnerability report
     unique_cves_tuple = vuln_report.extract(app_config, user_config)
     
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     #* Update the vulnerability report with KEV data
     kev_report = kev.enrich_with_kev(kev_dataframe, nvd_data)
     #* In the write report file there is also an option to write a csv file
-    exploitdb_response = ghdb.create_dataframe(app_config)
+    exploitdb_response = ghdb.load(app_config)
     exploitdb_df = exploitdb_response["data"]
     
     print(unique_cves_tuple)
