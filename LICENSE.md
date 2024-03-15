@@ -54,4 +54,5 @@ IN WITNESS WHEREOF, the parties hereto have executed this Agreement as of the da
 
 Remember, this is a starting point designed to give you an idea of what a source-available license might look like. Tailoring the specifics to fit the legal and business needs of Agoge.io and ensuring compliance with applicable laws is crucial. Always consult with a legal professional to finalize any licensing agreement.
 
+If you would like a free license, you can recieve one at: https://agoge.io/agoge-io-crypteia-source-available-license-acsl-version-1-0/
 
