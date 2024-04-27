@@ -5,7 +5,7 @@ import sys
 
 import pandas as pd
 
-from krypteia import utils
+from crypteia import utils
 from datetime import datetime
 
 GITHUB_API_KEY = os.environ.get("NVD_API_KEY")

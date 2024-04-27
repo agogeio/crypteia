@@ -1,6 +1,6 @@
 import time
 
-from krypteia import *
+from crypteia import *
 
 if __name__ == "__main__":
     start = time.time()

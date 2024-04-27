@@ -1,6 +1,6 @@
 import sys
 
-from krypteia import utils
+from crypteia import utils
 
 THREAT_INTEL_TYPE = 'EPSS'
 

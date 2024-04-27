@@ -3,13 +3,38 @@ import sys
 
 import pandas as pd
 
-from krypteia import utils
+from crypteia import utils
 
 THREAT_INTEL_TYPE = 'KEV'
 
 STATUS_ERROR = 400
 STATUS_TERMINATE = 500
 STATUS_OK = 200
+
+def count_entries(app_config: dict) -> int:
+    """
+    Count the number of KEV entries
+
+    Args:
+        app_config (dict): Required the application configuration object
+
+    Returns:
+        int: the length of the vulnerabilities list in the KEV file
+    """
+    KEV_DIR = app_config["KEV_DIR"]
+    KEV_FILE = app_config["KEV_FILE"]
+    KEV_PATH = KEV_DIR+KEV_FILE
+    
+    try:
+        with open(KEV_PATH) as kev_json_file:
+            kev_file_object = kev_json_file.read()
+    except Exception as e:
+        sys.exit(f'Error loading KEV File: {e}')
+    else:
+        kev_json_data = json.loads(kev_file_object)
+        kev_len =  len(kev_json_data["vulnerabilities"])
+        
+    return kev_len
 
 def create_dataframe(app_config: dict) -> dict:
     """
@@ -130,15 +155,18 @@ def enrich_with_kev(KEV_df: pd.DataFrame, cve_data: list) -> dict:
 if __name__ == "__main__":
     import config
     
-    nvd_data = [['CVE-2016-2183', 'Modified', 7.5, 'HIGH', 'NETWORK', 'LOW'], 
-                ['CVE-2023-23375', 'Analyzed', 7.8, 'HIGH', 'LOCAL', 'LOW'], 
-                ['CVE-2023-28304', 'Analyzed', 7.8, 'HIGH', 'LOCAL', 'LOW'], 
-                ['CVE-2022-31777', 'Analyzed', 5.4, 'MEDIUM', 'NETWORK', 'LOW'], 
-                ['CVE-2023-4128', 'Rejected', 'None', 'None', 'None', 'None'], 
-                ['CVE-2015-2808', 'Modified', 5.0, 'None', 'NETWORK', 'LOW']]
+    
+    
+    # nvd_data = [['CVE-2016-2183', 'Modified', 7.5, 'HIGH', 'NETWORK', 'LOW'], 
+    #             ['CVE-2023-23375', 'Analyzed', 7.8, 'HIGH', 'LOCAL', 'LOW'], 
+    #             ['CVE-2023-28304', 'Analyzed', 7.8, 'HIGH', 'LOCAL', 'LOW'], 
+    #             ['CVE-2022-31777', 'Analyzed', 5.4, 'MEDIUM', 'NETWORK', 'LOW'], 
+    #             ['CVE-2023-4128', 'Rejected', 'None', 'None', 'None', 'None'], 
+    #             ['CVE-2015-2808', 'Modified', 5.0, 'None', 'NETWORK', 'LOW']]
     
     app_config, user_config = config.bootstrap()
-    download(app_config, user_config)
-    kev_df = create_dataframe(app_config)
-    report = enrich_with_kev(kev_df["data"], nvd_data)
-    print(f'{report["data"]}, {report["columns"]}')
+    print(count_entries(app_config))
+    # download(app_config, user_config)
+    # kev_df = create_dataframe(app_config)
+    # report = enrich_with_kev(kev_df["data"], nvd_data)
+    # print(f'{report["data"]}, {report["columns"]}')
