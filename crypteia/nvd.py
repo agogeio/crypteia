@@ -22,6 +22,7 @@ STATUS_ERROR = 400
 STATUS_TERMINATE = 500
 STATUS_OK = 200
 
+# MARK: calculate_run_time
 #! Updated with dict response
 def calculate_run_time(unique_cves: tuple) -> dict:
     """
@@ -62,6 +63,7 @@ def calculate_run_time(unique_cves: tuple) -> dict:
     return response
 
 
+# MARK: check_missing_files
 #! Updated but not currently used
 def check_missing_files(nvd_file_paths) -> dict:
     """
@@ -92,6 +94,7 @@ def check_missing_files(nvd_file_paths) -> dict:
     return response
 
 
+#  MARK: download
 #! Need to fix responses to match dict output
 def download(app_config: dict, user_config: dict) -> dict:
     """
@@ -152,7 +155,8 @@ def download(app_config: dict, user_config: dict) -> dict:
     #! I don't love this, need to put merge on it's own        
     if merge == True: filter_and_merge(app_config)
 
-    
+
+# MARK: extract_cvss_data
 #! Need to fix responses to match dict output
 def extract_cvss_data(nvd_data: pd.DataFrame) -> dict:
     """ Extract needed CVE data from the NVD dataset """
@@ -188,6 +192,7 @@ def extract_cvss_data(nvd_data: pd.DataFrame) -> dict:
     return cvss_data
 
 
+# MARK: filter_and_merge
 #! Need to fix responses to match dict output
 def filter_and_merge(app_config: dict) -> None:
     """
@@ -242,6 +247,7 @@ def filter_and_merge(app_config: dict) -> None:
         print(f"File {nvd_master_file_path} with {len(nvd_database["nvd_database"])} records written to the filesystem")
 
 
+# MARK: nvd_controller
 #! Need to fix responses to match dict output
 def nvd_controller(app_config: dict, user_config: dict, unique_cves: tuple) -> list:
     """ Manage flow control if data will be pulled from the API or locally """
@@ -282,6 +288,7 @@ def nvd_controller(app_config: dict, user_config: dict, unique_cves: tuple) -> l
         return nvd_data
 
 
+# MARK: load_from_api
 #! Need to fix responses to match dict output
 def load_from_api(app_config: dict, unique_cves: tuple, nvd_sleep_timer: int = 6) -> list:
     """ Extracts data from the National Vulnerability Database """
@@ -371,6 +378,7 @@ def load_from_api(app_config: dict, unique_cves: tuple, nvd_sleep_timer: int = 6
     return cve_list
 
 
+#MARK: load_from_local
 #! Need to fix responses to match dict output
 def load_from_local(app_config: dict) -> pd.DataFrame: #, unique_cves: tuple
     """ Reading data from the local NVD data source """
@@ -397,6 +405,7 @@ def load_from_local(app_config: dict) -> pd.DataFrame: #, unique_cves: tuple
         return nvd_df
 
 
+#MARK: process_local
 #! Need to fix responses to match dict output
 def process_local(unique_cves: tuple, nvd_df: pd.DataFrame) -> list:
     """ Takes application & user configs and extracts CVE information from the supplied dataframe """

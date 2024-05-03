@@ -4,7 +4,7 @@ import sys
 
 columns=['cveID', 'vulnStatus', 'baseScore', 'baseSeverity', 'attackVector', 'accessComplexity', 'vectorString', 'isKEV', 'knownRansomwareCampaignUse']
 
-def csv(user_config: dict, cve_report: list):
+def csv(user_config: dict, cve_report: dict):
     
     print("\n***** Generating CSV report and writing to disk *****\n")
     
@@ -13,7 +13,7 @@ def csv(user_config: dict, cve_report: list):
     file_path = user_config["USER_PROCESSED_VULNERABILITY_REPORT_DIR"]+date_time+"-"+user_config["USER_PROCESSED_VULNERABILITY_REPORT_BASE_NAME"]+".csv"
     
     try:
-        cve_df = pd.DataFrame(cve_report, columns=columns)
+        cve_df = pd.DataFrame(cve_report["data"], columns=columns)
         cve_df.to_csv(file_path)
     except Exception as e:
         sys.exit(f"Error in write report processing CSV file: {e}")
@@ -25,14 +25,14 @@ def csv(user_config: dict, cve_report: list):
 
 def excel(user_config: dict, cve_report: list):
     
-    print("\n***** Generating CSV report and writing to disk *****\n")
+    print("\n***** Generating Excel report and writing to disk *****\n")
     
     now = datetime.now()
     date_time = now.strftime("%m-%d-%Y-%H-%M")
     file_path = user_config["USER_PROCESSED_VULNERABILITY_REPORT_DIR"]+date_time+"-"+user_config["USER_PROCESSED_VULNERABILITY_REPORT_BASE_NAME"]+".xlsx"
     
     try:
-        cve_df = pd.DataFrame(cve_report, columns=columns)
+        cve_df = pd.DataFrame(cve_report["data"], columns=columns)
         cve_df.to_excel(file_path, index=False)
     except Exception as e:
         sys.exit(f"Error in write report processing Excel file: {e}")
@@ -40,6 +40,24 @@ def excel(user_config: dict, cve_report: list):
         print(f"Wrote processed report to file: {file_path}")
         
     return file_path
+
+
+def return_report(user_config: dict, cve_report: list):
+    
+    print("\n***** Generating Excel report and writing to disk *****\n")
+    
+    now = datetime.now()
+    date_time = now.strftime("%m-%d-%Y-%H-%M")
+    file_path = user_config["USER_PROCESSED_VULNERABILITY_REPORT_DIR"]+date_time+"-"+user_config["USER_PROCESSED_VULNERABILITY_REPORT_BASE_NAME"]+".xlsx"
+    
+    try:
+        cve_df = pd.DataFrame(cve_report["data"], columns=columns)
+    except Exception as e:
+        sys.exit(f"Error in write report processing Excel file: {e}")
+    else:
+        print(f"Wrote processed report to file: {file_path}")
+        
+    return cve_df
 
 
 if __name__ == "__main__":

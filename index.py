@@ -35,14 +35,11 @@ if __name__ == "__main__":
     exploitdb_response = ghdb.load(app_config)
     exploitdb_df = exploitdb_response["data"]
     
-    print(unique_cves_tuple)
+    # print(unique_cves_tuple)
     
     # exploitdb.enrich_with_exploitdb(exploitdb_df, unique_cves_tuple)
     
-    
-    
-    
-    # excel_file_path = write_report.excel(user_config, kev_report)
+    excel_file_path = write_report.excel(user_config, kev_report)
 
     print(f"\nTotal Processing Time: {round((time.time() - start)/60, 2)} minutes")
     
