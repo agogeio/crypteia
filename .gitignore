@@ -1,6 +1,7 @@
 .dccache
 pyvenv.cfg
-/cve_parse/__pycache__/
+/crypteia/__pycache__/
+/crypteia/parsers/__pycache__/
 /export/**
 *.cfg
 *.env

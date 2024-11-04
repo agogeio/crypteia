@@ -28,13 +28,13 @@ if __name__ == "__main__":
     st.title("Cryptia Vulnerability Processing")
     # MARK: STREAMLIT SIDE BAR
     with st.sidebar:
-        st.image("./images/agoge_shield_and_text.svg", width=290)
+        # st.image("./images/agoge_shield_and_text.svg", width=290)
         
         with st.form("VulnerabilityUpload"):
             with st.popover(label="Upload Your Report", use_container_width=True):
                 
                 st.write("Select Rapid7 Nexpose or Tenable export file")
-                vendor = st.radio(" ", ["Tenable", "Rapid7"])
+                vendor = st.radio(" ", ["Tenable", "Rapid7", "Inspector"])
                 # st.write("Selected report type:", vendor)
 
                 vendor_report = st.file_uploader("Vulnerability File", type=["xlsx"])
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         st.write("If you need help exporting your file for use watch the instructional video here")  
         st.markdown("[Need help exporting your report?](https://agoge.io/vulnerability-scan-exports)")
                
-        st.caption("Created by Steven Aiello @ https://agoge.io")
+        # st.caption("Created by Steven Aiello @ https://agoge.io")
 
     # col1, col2 = st.columns(2)
     # col1, col2, col3 = st.columns(3)
